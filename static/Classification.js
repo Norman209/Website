@@ -401,24 +401,25 @@ let image_ids = ['blur_sample_image', 'blur_normal_sample_image', 'rotate_normal
     let max_crop_value = $("#slider-range").slider("values", 1)
 
     //setting the default source of all images before user touches sliders
-    document.getElementById('blur_normal_sample_image').src = `/static/${folder_id}/sample${sample_image_extension}`
-    document.getElementById('blur_sample_image').src = `/static/${folder_id}/blur/${String((Number(blur_slider.value)).toFixed(1))}${sample_image_extension}`
+    document.getElementById('blur_normal_sample_image').src = `/static/upload_folder/${folder_id}/sample${sample_image_extension}`
+    document.getElementById('blur_sample_image').src = `/static/upload_folder/${folder_id}/blur/${String((Number(blur_slider.value)).toFixed(1))}${sample_image_extension}`
     document.getElementById('blur_limit_caption').innerText = String((Number(blur_slider.value)).toFixed(1)) + 'px'
     document.getElementById('show_blur_limit').innerText = String((Number(blur_slider.value)).toFixed(1))
-    document.getElementById('grayscale_sample_image').src = `/static/${folder_id}/sample${sample_image_extension}`
-    document.getElementById('rotate_normal_sample_image').src = `/static/${folder_id}/sample${sample_image_extension}`
-    document.getElementById('rotate_sample_image').src = `/static/${folder_id}/rotate/${String((Number(rotate_slider.value)))}${sample_image_extension}`
-    document.getElementById("counter_clockwise_sample_img").src = `/static/${folder_id}/counter_clockwise/counter_clockwise${sample_image_extension}`
-    document.getElementById("clockwise_sample_img").src = `/static/${folder_id}/clockwise/clockwise${sample_image_extension}`
-    document.getElementById("upside_down_sample_img").src = `/static/${folder_id}/upside_down/upside_down${sample_image_extension}`
-    document.getElementById("vertical_flip_sample_img").src = `/static/${folder_id}/sample${sample_image_extension}` 
-    document.getElementById("horizontal_flip_sample_img").src = `/static/${folder_id}/sample${sample_image_extension}` 
+    document.getElementById('grayscale_sample_image').src = `/static/upload_folder/${folder_id}/sample${sample_image_extension}`
+    document.getElementById('rotate_normal_sample_image').src = `/static/upload_folder/${folder_id}/sample${sample_image_extension}`
+    document.getElementById('rotate_sample_image').src = `/static/upload_folder/${folder_id}/rotate/${String((Number(rotate_slider.value)))}${sample_image_extension}`
+    document.getElementById("counter_clockwise_sample_img").src = `/static/upload_folder/${folder_id}/counter_clockwise/counter_clockwise${sample_image_extension}`
+    document.getElementById("clockwise_sample_img").src = `/static/upload_folder/${folder_id}/clockwise/clockwise${sample_image_extension}`
+    document.getElementById("upside_down_sample_img").src = `/static/upload_folder/${folder_id}/upside_down/upside_down${sample_image_extension}`
+    document.getElementById("vertical_flip_sample_img").src = `/static/upload_folder/${folder_id}/sample${sample_image_extension}` 
+    document.getElementById("horizontal_flip_sample_img").src = `/static/upload_folder/${folder_id}/sample${sample_image_extension}` 
+    // document.getElementById("horizontal_flip_sample_img").src = "{{ url_for('/static/upload_folder', filename=f'{sample}/{sample_image_extension}') }}"
 
-    document.getElementById('rotate_sample_image2').src = `/static/${folder_id}/rotate/${String((Number(-rotate_slider.value)))}${sample_image_extension}`
+    document.getElementById('rotate_sample_image2').src = `/static/upload_folder/${folder_id}/rotate/${String((Number(-rotate_slider.value)))}${sample_image_extension}`
 
     // crop sample img 1 will hold min crop %, crop sample img 2 will hold max crop %
-    document.getElementById('crop_sample_img').src = `/static/${folder_id}/crop/${String((Number(1)))}${sample_image_extension}`
-    document.getElementById('crop_sample_img2').src = `/static/${folder_id}/crop/${String((Number(28)))}${sample_image_extension}`
+    document.getElementById('crop_sample_img').src = `/static/upload_folder/${folder_id}/crop/${String((Number(1)))}${sample_image_extension}`
+    document.getElementById('crop_sample_img2').src = `/static/upload_folder/${folder_id}/crop/${String((Number(28)))}${sample_image_extension}`
 
 
     

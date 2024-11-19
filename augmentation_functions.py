@@ -55,7 +55,8 @@ def crop(image_path, percentage, save_path):
     height = image.shape[0]
     width = image.shape[1]
     transform = A.Compose([
-    A.CenterCrop(height=round(height*((100-percentage)/100)), width=round(width*((100-percentage)/100)))
+    A.CenterCrop(height=round(height*((100-percentage)/100)), width=round(width*((100-percentage)/100))),
+    A.Resize(height=height, width=width)
     ])
     augmented = transform(image=image)
     cropped_image = augmented['image']

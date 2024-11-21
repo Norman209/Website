@@ -50,21 +50,15 @@ class_info_dict = {}
 #(ONLY FOR CSV LABELS) each class info dictionary also contains a dictionary of csv labeled images (ex. class_info_dict['folder_id']['csv_labeled_images']---> dict of image paths as keys, and classes as values)
 # each class info dictionary also contains a list of unlabeled images from both folders and csv (ex. class_info_dict['folder_id']['unlabeled_images'] ---> list of paths to unlabeled images)
 
+def generateUUID(length): #generate UUID for special filename characters
+    random = str(uuid.uuid4()) # Convert UUID format to a Python string.
+    random = random.replace("-","") # Remove the UUID '-'.
+    return random[0:length] # Return the random string.
 
+space_id = generateUUID(5)
+left_par_id = generateUUID(5)    #encoding invalid characters, then decoding them when user downloads
+right_par_id = generateUUID(5)
 
-space_id = 'efscsI8785'
-left_par_id = 'rjrbvldbv23'      #encoding invalid characters, then decoding them when user downloads
-right_par_id = 'oidfvdjlvbevo'
-
-
-
-# @app.route("/test",methods=['GET', 'POST'])
-# def starting_page():
-#     if request.method=='POST':
-#         value = request.form['Task']
-#         print(f'chose {value}')
-#         return redirect(f'/{value}')
-#     return render_template('augment.html')
 
 def delete_dir(path):
     shutil.rmtree(path,ignore_errors=True)
@@ -461,6 +455,7 @@ def augment(dataset_id):
 
             # folder to augment is full_dir_path
             #TODO: augment folder here
+
 
             print('augmenting',folder_name)
             shutil.make_archive(full_dir_path,'zip',output_file_path)

@@ -41,7 +41,7 @@ valid_image_extensions = ('.png', '.jpg', '.jpeg', '.tiff', '.bmp')
 #the keys for this dict are folder ids, and the values are the sample image's extension from the corresponding folder
 dict_with_interactive_image_paths = {} #dict with image extensions that will be used for interacitve sliders
 #if the value for a key (a folder id) is 'none', that means that the folder is invalid and has no images
-
+#website
 
 
 class_info_dict = {}

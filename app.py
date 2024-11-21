@@ -455,6 +455,7 @@ def augment(dataset_id):
 
             # folder to augment is full_dir_path
             #TODO: augment folder here
+            print("augmentation data:",augmentation_data)
 
 
             print('augmenting',folder_name)
@@ -498,9 +499,11 @@ def Segmentation():
 def get_all_preview_images(folder_id,aug):
     folder_path = os.path.join(interactive_images_folder_path,folder_id,aug)
     image_names = os.listdir(folder_path)
+    
+    print("image names:",image_names)
     images = {}
     for img_name in image_names:
-        image_path = os.path.join(upload_folder_path, folder_id, aug, img_name)
+        image_path = os.path.join(folder_path,img_name)
         for ext in valid_image_extensions:
             if img_name.endswith(ext):
                 blur_value = img_name.replace(ext,'')

@@ -1,7 +1,7 @@
 from flask import Flask, request, send_from_directory, jsonify,redirect,render_template,send_file,make_response,url_for
 from werkzeug.utils import secure_filename
 import logging
-log = logging.getLogger('pydrop')
+# log = logging.getLogger('pydrop')
 import shutil
 import time
 #import albumentations as A 
@@ -25,7 +25,8 @@ from augmentation_functions import crop
 
 from werkzeug import Request as r
 r.max_form_parts = 10000
-
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
 
 app = Flask(__name__, static_folder='/Users/milesnorman/Website/static',template_folder='/Users/milesnorman/Website/templates')
 app.config['UPLOAD_FOLDER']='upload_folder'
@@ -33,7 +34,9 @@ app.config['UPLOAD_FOLDER']='upload_folder'
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 static_folder_path = '/Users/milesnorman/Website/static'
-upload_folder_path = os.path.join(static_folder_path,'upload_folder')
+upload_folder_path = os.path.join(static_folder_path,'upload_folder') # putting uploaded datasets and interactive images in seperate folders
+interactive_images_folder_path = os.path.join(static_folder_path,"interactive_images_uploads")
+
 valid_image_extensions = ('.png', '.jpg', '.jpeg', '.tiff', '.bmp')
 #the keys for this dict are folder ids, and the values are the sample image's extension from the corresponding folder
 dict_with_interactive_image_paths = {} #dict with image extensions that will be used for interacitve sliders
@@ -70,7 +73,7 @@ def find_classes(csv_file, filenames):
     # Read the CSV file into a DataFrame
     df = pd.read_csv(csv_file)
     path_to_directory = '/'.join(csv_file.split('/')[:-1])
-    print('path to direc:',path_to_directory)
+    # print('path to direc:',path_to_directory)
     # Extract the class names from the DataFrame
     class_names = df.columns[1:].tolist()  # Assuming first column is 'filename'
 
@@ -114,13 +117,18 @@ def find_image_directories(root_dir):
 
 def unzip(path_to_zip_file):
     zip_filename = path_to_zip_file.split('/')[-1]
+    print("zip filename:",zip_filename)
     directory_to_extract_to = os.path.join(upload_folder_path,zip_filename[:-4])
+    print("dir to extrac to:",directory_to_extract_to)
     os.mkdir(directory_to_extract_to)
     shutil.unpack_archive(path_to_zip_file,directory_to_extract_to,'zip') #unpacking zip file
     rand_filename = random_filename()
-    os.rename(path_to_zip_file,os.path.join(upload_folder_path,rand_filename))
-    thread1 = threading.Thread(target=delete_zip_file,args=(rand_filename,))
-    thread1.start()
+
+    os.rename(path_to_zip_file,os.path.join(upload_folder_path,rand_filename)) #renaming zip file to random name before deleting so the actual folder containing the images doesn't get deleted
+
+    thread1 = threading.Thread(target=delete_zip_file,args=(rand_filename,)) 
+    thread1.start()#starting thread to delete initially uploaded zip file
+
     return directory_to_extract_to
 
 def find_sum_of_strings(list):
@@ -139,6 +147,7 @@ def download(id):
             download_file = dir
             thread3 = threading.Thread(target=delete_file,args=(f'{upload_folder_path}/{download_file}',))
             thread3.start()
+
             new_download_file_name = download_file.replace(id,'').replace(space_id,' ').replace(left_par_id,'(').replace(right_par_id,')')
             print('download file:',download_file)
             return send_file(os.path.join(upload_folder_path, download_file), as_attachment=True,download_name=new_download_file_name)
@@ -229,7 +238,7 @@ def make_interactive_images(path,id): #TODO:
                 if '__MACOSX' not in img_path:
                     #check if folder has images, if not, return none.
                     filename = img_path.split('/')[-1]
-                    interactive_images_path = os.path.join(upload_folder_path,id)
+                    interactive_images_path = os.path.join(interactive_images_folder_path,id)
                     os.mkdir(interactive_images_path) #making a folder for the users interactive images
                     blur_path = os.path.join(interactive_images_path,'blur')
                     # rotate_90_path = os.path.join(interactive_images_path,'rotate_90')
@@ -259,7 +268,7 @@ def make_interactive_images(path,id): #TODO:
                     img_extension = '.jpg'
                     print('generating blur images....')
                     for sigma in blur_decimal_range:
-                        print('sigma:',sigma)
+                        # print('sigma:',sigma)
                         for ext in valid_image_extensions:
                             if path_to_sample_image.endswith(ext):
                                 img_extension=ext
@@ -274,7 +283,7 @@ def make_interactive_images(path,id): #TODO:
                     for deg in rotate_range:
                         output_path = os.path.join(rotate_path,str(deg)+img_extension)
                         apply_rotate(path_to_sample_image,deg,output_path)
-                        print('deg:',deg)
+                        # print('deg:',deg)
 
 
                     #Next, we will generate the clockwise image, counter clockwise, and upside down image
@@ -292,10 +301,10 @@ def make_interactive_images(path,id): #TODO:
 
                     for perc in range(1,100):
                         crop(path_to_sample_image,perc,os.path.join(crop_path,f'{perc}'+img_extension))
-                        print(f"crop image generated: {perc}%")
+                        # print(f"crop image generated: {perc}%")
 
 
-                    return os.path.join('static/upload_folder',id,filename)
+                    return os.path.join(interactive_images_folder_path,id,filename) #returning path to sample images
 
     # deleting folder since it has no images
     thread6 = threading.Thread(target=delete_dir,args=(path,))
@@ -319,6 +328,7 @@ def find_dirs_of_filepath(filepath,id):
         if not os.path.exists(directory_path):
             os.mkdir(directory_path)
     file_path = find_sum_of_strings(dir_names_and_filename)+'/'+filename
+    print("file path:",file_path)
     return file_path
 
 
@@ -456,7 +466,7 @@ def augment(dataset_id):
             shutil.make_archive(full_dir_path,'zip',output_file_path)
             thread4 = threading.Thread(target=delete_dir,args=(full_dir_path,))
             thread4.start()
-            interactive_images_folder = os.path.join(upload_folder_path,dataset_id)
+            interactive_images_folder = os.path.join(interactive_images_folder_path,dataset_id)
             thread5 = threading.Thread(target=delete_dir,args=(interactive_images_folder,))
             thread5.start()
             break
@@ -491,7 +501,7 @@ def Segmentation():
     
 @app.route('/get_all_images/<folder_id>/<aug>', methods=['GET'])
 def get_all_preview_images(folder_id,aug):
-    folder_path = os.path.join(upload_folder_path,folder_id,aug)
+    folder_path = os.path.join(interactive_images_folder_path,folder_id,aug)
     image_names = os.listdir(folder_path)
     images = {}
     for img_name in image_names:
@@ -499,7 +509,7 @@ def get_all_preview_images(folder_id,aug):
         for ext in valid_image_extensions:
             if img_name.endswith(ext):
                 blur_value = img_name.replace(ext,'')
-                print(f"{aug} value:",blur_value)
+                # print(f"{aug} value:",blur_value)
                 break
         if os.path.exists(image_path):
             with open(image_path, "rb") as image_file:

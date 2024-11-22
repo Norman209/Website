@@ -118,8 +118,8 @@ async function upload_folder() {
         else {
             formData.append('file', chunk[starting_index]);
         }
-        let aug_data = collect_aug_data(); //collect aug data here
-        formData.append('augmentations', aug_data);
+        // let aug_data = collect_aug_data(); //collect aug data here
+        // formData.append('augmentations', aug_data);
         console.log('waiting for chunk ' + String(i + 1) + ' out of ' + num_chunks);
         await fetch('/send_folder/' + folder_id + '/' + last_upload, { body: formData, method: 'post' }).then(response => {
             const contentType = response.headers.get("content-type");
@@ -173,32 +173,52 @@ async function upload_folder() {
 }
 
 function collect_aug_data() {
-    aug_list = ['hello', 'miles'];
+    aug_list = [];
     augs_checkboxes = ['Flip_check_box','blur_checkbox', "90° rotate_check_box", 'Crop_checkbox', 'Rotate_checkbox', 'blur_checkbox']
-    let flip_checked = document.getElementById('blur_checkbox').checked;//check if blur is checked or not
+    let flip_checked = document.getElementById('Flip_check_box').checked;//check if blur is checked or not
     let rotation_90_checked = document.getElementById("90° rotate_check_box").checked;
     let crop_checked = document.getElementById('Crop_checkbox').checked;
     let rotate_checked = document.getElementById('Rotate_checkbox').checked;
     let blur_checked = document.getElementById('blur_checkbox').checked;
+    let grayscale_checked = document.getElementById('grayscale_checkbox').checked;
+    let preProcessGrayScaleChecked = document.getElementById("grayscale_preprocess").checked
+
+    //send pre-process info first
+
+    if(preProcessGrayScaleChecked){
+        aug_list.push('grayscalePreProcess');
+    }
     if (flip_checked) {
-        aug_list.push(['flip']) //items in order: vertically flipped, horizontally flipped, vertical prob, horizontal prob
         vertically_flipped = document.getElementById('vertical_flip').checked;
         horizontally_flipped = document.getElementById('horizontal_flip').checked;
-        aug_list[-1].push(vertically_flipped)
-        aug_list[-1].push(horizontally_flipped)
+        aug_list.push('flip'+"-"+vertically_flipped+"-"+horizontally_flipped) //items in order: vertically flipped, horizontally flipped, vertical prob, horizontal prob
     }
     if (rotation_90_checked) {
-        aug_list.push(['90_rotate']);
+        let clockwiseRotated = document.getElementById("Clockwise").checked
+        let counterClockwiseRotated = document.getElementById("Counter-Clockwise").checked
+        let upsideDownRotated = document.getElementById("Upside Down").checked
+        aug_list.push('90_rotate'+"-"+clockwiseRotated+"-"+counterClockwiseRotated+"-"+upsideDownRotated);
+
     }
     if (crop_checked) {
-        aug_list.push(['crop']);
+        console.log("crop checked")
+        let min_crop_value = $("#slider-range").slider("values", 0)
+        let max_crop_value = $("#slider-range").slider("values", 1)
+        aug_list.push("crop"+"-"+min_crop_value+"-"+max_crop_value);
     }
     if (rotate_checked) {
-        aug_list.push(['rotate']);
+        let degreesRotated = document.getElementById("Rotate_limit").value
+        aug_list.push('rotate'+"-"+degreesRotated);
     }
     if (blur_checked) {
-        aug_list.push(['blur']);
+        let blurValue = document.getElementById("blur_limit").value
+        aug_list.push('blur'+"-"+blurValue);
     }
+    if (grayscale_checked) {
+        let percentOutputtedImagesToGrayscale = document.getElementById("blur_limit").value
+        aug_list.push('grayscale'+"-"+percentOutputtedImagesToGrayscale);
+    }
+   
     //TODO: return form data instead of list
     return JSON.stringify(aug_list);
 }
@@ -568,10 +588,9 @@ if (sliders[i] === 'Rotate_limit') {
 }
 let data1;
 async function submit_everything() {
-    disable_inputs();
     alert("Augmenting uploaded dataset now...");
-
     let aug_form_data = collect_aug_data();
+    disable_inputs(); 
     let formData = new FormData();
     formData.append('aug_data', aug_form_data)
     //TODO: method here to call augmentation for specific dataset id and send over augmentation data

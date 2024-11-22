@@ -55,9 +55,9 @@ def generateUUID(length): #generate UUID for special filename characters
     random = random.replace("-","") # Remove the UUID '-'.
     return random[0:length] # Return the random string.
 
-space_id = generateUUID(5)
-left_par_id = generateUUID(5)    #encoding invalid characters, then decoding them when user downloads
-right_par_id = generateUUID(5)
+space_id = generateUUID(10)
+left_par_id = generateUUID(10)    #encoding invalid characters, then decoding them when user downloads
+right_par_id = generateUUID(10)
 
 
 def delete_dir(path):
@@ -453,12 +453,28 @@ def augment(dataset_id):
             full_dir_path = os.path.join(upload_folder_path,folder_name)
             output_file_path = os.path.join(upload_folder_path,folder_name)
 
+
+
             # folder to augment is full_dir_path
             #TODO: augment folder here
             print("augmentation data:",augmentation_data)
+            for augmentString in augmentation_data: #augmentation data includes both augment data and pre-process data strings
+                if "grayscalePreProcess" == augmentString:
+                    print("grayscale pre-processing")
+                elif "flip" in augmentString:
+                    print("flip augmentations:",augmentString.split("-")[1:])
+                elif "90_rotate" in augmentString:
+                    print("90_rotate augmentations:",augmentString.split("-")[1:])
+                elif "rotate" in augmentString:
+                    print("rotate augmentations:",augmentString.split("-")[1:])
+                elif "crop" in augmentString:
+                    print("crop augmentations",augmentString.split("-")[1:])
+                elif "blur" in augmentString:
+                    print("blur augmentations:",augmentString.split("-")[1:])
+                elif "grayscale" in augmentString:
+                    print("grayscale augmentations:",augmentString.split("-")[1:])
 
 
-            print('augmenting',folder_name)
             shutil.make_archive(full_dir_path,'zip',output_file_path)
             thread4 = threading.Thread(target=delete_dir,args=(full_dir_path,))
             thread4.start()
@@ -500,7 +516,7 @@ def get_all_preview_images(folder_id,aug):
     folder_path = os.path.join(interactive_images_folder_path,folder_id,aug)
     image_names = os.listdir(folder_path)
     
-    print("image names:",image_names)
+    # print("image names:",image_names)
     images = {}
     for img_name in image_names:
         image_path = os.path.join(folder_path,img_name)

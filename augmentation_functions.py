@@ -1,8 +1,10 @@
 import cv2
 import numpy as np
 from PIL import Image, ImageFilter
-
+import os
+os.environ["ALBUMENTATIONS_IGNORE_VERSION"] = "1"
 import albumentations as A
+os.environ["ALBUMENTATIONS_IGNORE_VERSION"] = "1"
 from matplotlib import pyplot as plt
 # def apply_gaussian_blur(image_path, base_sigma, output_path):
 #     image = Image.open(image_path)

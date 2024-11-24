@@ -1,5 +1,8 @@
 
 
+let originalImageWidth;
+let originalImageHeight;
+let image_ids = ['blur_sample_image', 'blur_normal_sample_image', 'rotate_normal_sample_image', 'rotate_sample_image', 'rotate_sample_image2','grayscale_sample_image','clockwise_sample_img','counter_clockwise_sample_img','upside_down_sample_img','vertical_flip_sample_img','horizontal_flip_sample_img','crop_sample_img','crop_sample_img2']
 
 let folder_id = "id" + Math.random().toString(16).slice(2);
 let input_ids = ['Flip_check_box', '90° rotate_check_box', 'Crop_checkbox', 'grayscale_checkbox', 'Rotate_checkbox', 'blur_checkbox', 'Expansion', 'grayscale_preprocess', 'resize_preprocess', 'submit'];
@@ -52,6 +55,28 @@ function grayscale_preview_images() {
     }
 }
 
+function resize_preview_images(){
+    let images = document.getElementsByClassName('sample_image')
+    if (document.getElementById('resize_preprocess').checked) {
+        document.getElementById("resize_preprocess_pop_up").style.display = "block"
+        for (i = 0; i < images.length; i++) {
+                // images[i].style.filter = 'grayscale(100%)'
+
+                // images[i].style.width = 
+                // images[i].style.height =  
+
+        }
+    }
+    else {
+        document.getElementById("resize_preprocess_pop_up").style.display = "none"
+        for (i = 0; i < images.length; i++) {
+            document.getElementById(image_ids[i]).style.width = 15*imageWidthToHeightRatio+"vw";
+            document.getElementById(image_ids[i]).style.height = 15*imageHeightToWidthRatio+"vw";
+        }
+    }
+
+}
+
 async function change_all_preview_images(pre_proccessing_option) { //this function changes the preview images based on chosen pre-proccessing options
     let checkbox_id = pre_proccessing_option + '_preprocess';
 
@@ -94,7 +119,7 @@ $( "#slider-range" ).slider({
 async function upload_folder() {
     document.getElementById('select_folder').style.display = 'none';
     let files = await document.getElementById('design').files
-    let batch_size = 250;
+    let batch_size = 10;
     let chunks = chunkDictionary(files, batch_size)
     let num_chunks = chunks.length;
     responses = [];
@@ -157,7 +182,7 @@ async function upload_folder() {
             document.getElementById('design').value = null;
             sample_image_extension = response;
             enable_inputs();
-                        break;
+            break;
         }
     }
     if (valid_return_count === 0) {
@@ -231,10 +256,12 @@ class display_popups {
         if (check_box.checked == true) {
             pop_up.style.display = 'block';
             console.log('checked checkbox');
+            document.getElementById("Rotate").style = "display:flex;width:auto;align-items:center;"
         }
         if (check_box.checked == false) {
             pop_up.style.display = 'none';
             console.log('unchecked checkbox');
+            document.getElementById("Rotate").style = ""
         }
     }
     blur_click_checkbox() {
@@ -395,11 +422,22 @@ function disable_inputs() {
     }
 }
 
-
+function updateImageWidths(){ 
+    for(i=0;i<image_ids.length;i++){
+        let element = document.getElementById('augmentation')
+        var positionInfo = element.getBoundingClientRect();
+        var height = positionInfo.height;
+        var width = positionInfo.width;
+        console.log("width:",width)
+        document.getElementById(image_ids[i]).style.width = .3*width+"px"
+    }
+    console.log("resized");
+}
+updateImageWidths();
+window.addEventListener('resize', updateImageWidths);
 
 
 async function enable_inputs() {
-let image_ids = ['blur_sample_image', 'blur_normal_sample_image', 'rotate_normal_sample_image', 'rotate_sample_image', 'rotate_sample_image2','grayscale_sample_image','clockwise_sample_img','counter_clockwise_sample_img','upside_down_sample_img','vertical_flip_sample_img','horizontal_flip_sample_img','crop_sample_img','crop_sample_img2']
     reset_inputs();
     document.getElementById('dataset_upload_progress').value = 0
     //upload_progress
@@ -530,36 +568,23 @@ let image_ids = ['blur_sample_image', 'blur_normal_sample_image', 'rotate_normal
           " - " + $( "#slider-range" ).slider( "values", 1 ) +"%");
       } );
 
+    let originalImageWidth = document.getElementById('blur_sample_image').width;
+    let originalImageHeight = document.getElementById('blur_sample_image').height;
+    let imageWidthToHeightRatio = originalImageWidth/originalImageHeight
+    let imageHeightToWidthRatio = originalImageHeight/originalImageWidth
+    // console.log("original width to height ratio:",imageWidthToHeightRatio)
+    // console.log("original height to width ratio:",imageHeightToWidthRatio)
+    // console.log('width:', originalImageWidth);
+    // console.log('height:', originalImageHeight);
+    // for (i = 0; i < image_ids.length; i++) {
+    //     let imageElement = document.getElementById(image_ids[i])
+    //     // imageElement.style.width = 15*imageWidthToHeightRatio+"vw";
+    //     // imageElement.style.height = (15*imageWidthToHeightRatio)*imageHeightToWidthRatio+"vw";
+    //     // imageElement.style.maxWidth="50%"
+    //     // imageElement.style.maxHeight= imageHeightToWidthRatio*imageElement.style.width
     
+    // }
 
-    let width = document.getElementById('blur_sample_image').width;
-    let height = document.getElementById('blur_sample_image').height;
-    console.log('width:', width);
-    console.log('height:', height);
-    if (width > height) {
-        for (i = 0; i < image_ids.length; i++) {
-            document.getElementById(image_ids[i]).style.width = '15vw'
-            document.getElementById(image_ids[i]).style.height = 'auto';
-        }
-        console.log('width greater than height');
-    }
-    else if (height > width) {
-        for (i = 0; i < image_ids.length; i++) {
-            document.getElementById(image_ids[i]).style.height = '15vw'
-            document.getElementById(image_ids[i]).style.width = 'auto';
-        }
-        let img_divs = document.getElementsByClassName('img_div');
-    }
-    else {
-        for (i = 0; i < image_ids.length; i++) {
-            console.log('image src:', document.getElementById(image_ids[i]).src);
-            document.getElementById(image_ids[i]).style.width = '15vw'
-            document.getElementById(image_ids[i]).style.height = 'auto';
-            console.log(document.getElementById(image_ids[i]).width);
-        }
-        console.log('width and height same');
-
-    }
 }
 
 

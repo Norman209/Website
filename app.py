@@ -7,6 +7,7 @@ import time
 #import albumentations as A 
 # albumentations takes too much time to import
 import os
+os.environ["ALBUMENTATIONS_IGNORE_VERSION"] = "1"
 import uuid
 import base64
 import json
@@ -22,7 +23,7 @@ from augmentation_functions import apply_counter_clockwise
 from augmentation_functions import apply_upside_down
 from augmentation_functions import apply_clockwise
 from augmentation_functions import crop
-
+os.environ["ALBUMENTATIONS_IGNORE_VERSION"] = "1"
 from werkzeug import Request as r
 r.max_form_parts = 10000
 log = logging.getLogger('werkzeug')
@@ -543,4 +544,4 @@ def change_all_preview_images(folder_id,pre_proccessing_option):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)#debug=True #host='0.0.0.0', port=5000
+    app.run(debug=True,host='0.0.0.0',port=5000)#debug=True #host='0.0.0.0', port=5000

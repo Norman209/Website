@@ -27,7 +27,7 @@ os.environ["ALBUMENTATIONS_IGNORE_VERSION"] = "1"
 from werkzeug import Request as r
 r.max_form_parts = 10000
 log = logging.getLogger('werkzeug')
-log.setLevel(logging.ERROR)
+# log.setLevel(logging.ERROR)
 
 app = Flask(__name__, static_folder='/Users/milesnorman/Website/static',template_folder='/Users/milesnorman/Website/templates')
 app.config['UPLOAD_FOLDER']='upload_folder'
@@ -224,7 +224,7 @@ def check_if_folder_is_valid(folder_path):
     return class_images
     
 
-
+#upload path, folderid
 def make_interactive_images(path,id): #TODO:
     for absolute_path,dirs, files in os.walk(path):
         for filename in files:
@@ -261,7 +261,7 @@ def make_interactive_images(path,id): #TODO:
                     #First, we will generate the guassian blur images.
                     blur_decimal_range = np.arange(0.1, 25.1, 0.1) 
                     img_extension = '.jpg'
-                    print('generating blur images....')
+                    # print('generating blur images....')
                     for sigma in blur_decimal_range:
                         # print('sigma:',sigma)
                         for ext in valid_image_extensions:
@@ -273,7 +273,7 @@ def make_interactive_images(path,id): #TODO:
                     
                     
                     #Next, we will generate the rotate images.
-                    print('generating rotate images...')
+                    # print('generating rotate images...')
                     rotate_range = [deg for deg in range(-45,46)]
                     for deg in rotate_range:
                         output_path = os.path.join(rotate_path,str(deg)+img_extension)
@@ -323,7 +323,7 @@ def find_dirs_of_filepath(filepath,id):
         if not os.path.exists(directory_path):
             os.mkdir(directory_path)
     file_path = find_sum_of_strings(dir_names_and_filename)+'/'+filename
-    print("file path:",file_path)
+    # print("file path:",file_path)
     return file_path
 
 
@@ -350,7 +350,9 @@ def receive_folder_files(folder_id,last_upload):
         for folder_name in os.listdir(upload_folder_path):
             if folder_id in folder_name:
                 directory_to_upload = os.path.join(upload_folder_path,folder_name)
-                img_path = make_interactive_images(upload_folder_path,folder_id)
+                print("directory to upload:",directory_to_upload)
+                img_path = make_interactive_images(directory_to_upload,folder_id)
+                print("returned img path:",img_path)
 
                 if img_path!='none':
                     class_data = check_if_folder_is_valid(directory_to_upload)

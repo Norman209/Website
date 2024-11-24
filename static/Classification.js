@@ -5,6 +5,7 @@ let originalImageHeight;
 let image_ids = ['blur_sample_image', 'blur_normal_sample_image', 'rotate_normal_sample_image', 'rotate_sample_image', 'rotate_sample_image2','grayscale_sample_image','clockwise_sample_img','counter_clockwise_sample_img','upside_down_sample_img','vertical_flip_sample_img','horizontal_flip_sample_img','crop_sample_img','crop_sample_img2']
 
 let folder_id = "id" + Math.random().toString(16).slice(2);
+console.log("folder id:",folder_id)
 let input_ids = ['Flip_check_box', '90° rotate_check_box', 'Crop_checkbox', 'grayscale_checkbox', 'Rotate_checkbox', 'blur_checkbox', 'Expansion', 'grayscale_preprocess', 'resize_preprocess', 'submit'];
 console.log('JAVASCRIPT STARTED');
 window.onload = function () {
@@ -126,6 +127,9 @@ async function upload_folder() {
     let last_upload = 'false';
     for (i = 0; i < chunks.length; i++) {
         console.log('i:', i, 'chunks length:', chunks.length);
+        if((i)==chunks.length-1){
+            document.getElementById("visualizationGenerationIndicator").style.display = "block";
+        }
         last_upload = String((i + 1) === chunks.length);
         let formData = new FormData();
         let chunk = chunks[i];
@@ -170,6 +174,7 @@ async function upload_folder() {
 
     }
     console.log('finished');
+    document.getElementById("visualizationGenerationIndicator").style.display = "none";
     let valid_return_count = 0;
     console.log('responses:', responses)
     for (i = 0; i < responses.length; i++) {
@@ -186,6 +191,7 @@ async function upload_folder() {
         }
     }
     if (valid_return_count === 0) {
+        document.getElementById("visualizationGenerationIndicator").style.display = "none";
         console.log('no images found')
         alert('no images found in dataset')
         document.getElementById('dropzone_buttons').style.display = 'block';
@@ -422,14 +428,29 @@ function disable_inputs() {
     }
 }
 
-function updateImageWidths(){ 
+function updateImageWidths(){  //updates image and figcaption widths
+    let divWidth;
     for(i=0;i<image_ids.length;i++){
         let element = document.getElementById('augmentation')
         var positionInfo = element.getBoundingClientRect();
         var height = positionInfo.height;
         var width = positionInfo.width;
+        divWidth=width
         console.log("width:",width)
         document.getElementById(image_ids[i]).style.width = .3*width+"px"
+    }
+    // Select all <figcaption> elements on the page
+    const figcaptions = document.querySelectorAll('figcaption');
+
+    // Convert NodeList to an array (optional)
+    const figcaptionArray = Array.from(figcaptions);
+
+    console.log(figcaptionArray);
+    
+    for(i=0;i<figcaptionArray.length;i++){
+        // let figcaption = document.getElementById(figcaptionArray[i])
+        // figcaption.style.width = .3*width+"px"
+        console.log(figcaptionArray[i].style.width=.3*divWidth+"px");
     }
     console.log("resized");
 }
@@ -572,19 +593,6 @@ async function enable_inputs() {
     let originalImageHeight = document.getElementById('blur_sample_image').height;
     let imageWidthToHeightRatio = originalImageWidth/originalImageHeight
     let imageHeightToWidthRatio = originalImageHeight/originalImageWidth
-    // console.log("original width to height ratio:",imageWidthToHeightRatio)
-    // console.log("original height to width ratio:",imageHeightToWidthRatio)
-    // console.log('width:', originalImageWidth);
-    // console.log('height:', originalImageHeight);
-    // for (i = 0; i < image_ids.length; i++) {
-    //     let imageElement = document.getElementById(image_ids[i])
-    //     // imageElement.style.width = 15*imageWidthToHeightRatio+"vw";
-    //     // imageElement.style.height = (15*imageWidthToHeightRatio)*imageHeightToWidthRatio+"vw";
-    //     // imageElement.style.maxWidth="50%"
-    //     // imageElement.style.maxHeight= imageHeightToWidthRatio*imageElement.style.width
-    
-    // }
-
 }
 
 
@@ -742,6 +750,7 @@ Dropzone.options.dropper = {
 }
 function set_zip_or_folder_upload() {
     folder_id = "id" + Math.random().toString(16).slice(2);
+    console.log("folder id:",folder_id)
     var dropzoneElement = document.getElementById('dropper');
     Dropzone.forElement('#dropper').removeAllFiles(true);
     let zip_option = document.getElementById('zip');

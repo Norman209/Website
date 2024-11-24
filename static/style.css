@@ -161,7 +161,7 @@ figcaption {
   text-align: center;
   height: 5vw;
   word-wrap: break-word;
-  max-width: 50%;
+  /* max-width: 50%; */
 }
 
 

@@ -82,6 +82,10 @@ input[type=radio] {
 }
 
 
+.sample_image {
+  max-width: 40%;
+}
+
 
 select {
   width: 15vw;
@@ -155,11 +159,13 @@ h3 {
 figcaption {
   border: 1px solid blue;
   font-family: Verdana, Geneva, sans-serif;
-  font-size: 3vw;
+  font-size: calc(10px + 2vw);
+  /* Adjust as needed */
   text-shadow: none;
   color: black;
   text-align: center;
   height: 5vw;
+  width: 100%;
   word-wrap: break-word;
   /* max-width: 50%; */
 }
@@ -299,198 +305,254 @@ span.value.upper::after {
 
 
 
-        General Body Styling
-        body {
-          margin: 0;
-          font-family: Arial, sans-serif;
-          background-color: #333;
-          color: #fff;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-      }
+General Body Styling body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #333;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 
-      h1 {
-          text-align: center;
-          margin: 20px;
-          font-size: 2rem;
-      }
+h1 {
+  text-align: center;
+  margin: 20px;
+  font-size: 2rem;
+}
 
-      /* Responsive Div Containers */
-      #upload_progress, #dropzone_buttons, #Pre-Proccessing, #augmentation {
-          max-width: 1000px;
-          width: 90%;
-          background-color: #444;
-          margin: 10px auto;
-          padding: 20px;
-          border-radius: 10px;
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-      }
+/* Responsive Div Containers */
+#upload_progress,
+#dropzone_buttons,
+#Pre-Proccessing,
+#augmentation {
+  max-width: 1000px;
+  width: 90%;
+  background-color: #444;
+  margin: 10px auto;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
 
-      label {
-          display: inline-block;
-          margin-top: 10px;
-      }
+label {
+  display: inline-block;
+  margin-top: 10px;
+}
 
-      /* Inputs and Buttons */
-      input[type="button"], button {
-          font-size: 1rem;
-          margin-top: 10px;
-          padding: 10px 20px;
-          border: none;
-          border-radius: 5px;
-          background-color: #0066cc;
-          color: #fff;
-          cursor: pointer;
-      }
+/* Inputs and Buttons */
+input[type="button"],
+button {
+  font-size: 1rem;
+  margin-top: 10px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  background-color: #0066cc;
+  color: #fff;
+  cursor: pointer;
+}
 
-      input[type="button"]:hover, button:hover {
-          background-color: #004d99;
-      }
+input[type="button"]:hover,
+button:hover {
+  background-color: #004d99;
+}
 
-      progress {
-          width: 100%;
-          height: 20px;
-      }
+progress {
+  width: 100%;
+  height: 20px;
+}
 
-      /* Responsive Images */
-      img {
-          max-width: 100%;
-          height: auto;
-          margin-top: 10px;
-          display: block;
-      }
+/* Responsive Images */
+img {
+  max-width: 100%;
+  height: auto;
+  margin-top: 10px;
+  display: block;
+}
 
-      /* Media Queries */
-      @media (max-width: 768px) {
-          h1 {
-              font-size: 1.5rem;
-          }
+/* Media Queries */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 1.5rem;
+  }
 
-          input[type="button"], button {
-              font-size: 0.9rem;
-              padding: 8px 16px;
-          }
-
-          label {
-              font-size: 0.9rem;
-          }
-      }
-
-      @media (max-width: 480px) {
-          h1 {
-              font-size: 1.2rem;
-          }
-
-          input[type="button"], button {
-              font-size: 0.8rem;
-              padding: 6px 12px;
-          }
-
-          label {
-              font-size: 0.8rem;
-          }
-      }
-         /* Button Styling */
-           /* Button Styling */
+  input[type="button"],
   button {
-      display: inline-block; /* Ensures button fits content */
-      font-size: clamp(0.9rem, 2.5vw, 1.2rem); /* Adjusts font size dynamically */
-      font-weight: bold; /* Makes text stand out */
-      margin-top: 20px;
-      padding: 10px 20px; /* Space inside button */
-      border: none;
-      border-radius: 5px;
-      background-color: #0066cc;
-      color: #fff;
-      cursor: pointer;
-      white-space: nowrap; /* Prevents text wrapping */
-      text-align: center;
-      box-sizing: border-box; /* Ensures consistent padding and sizing */
-      overflow: hidden; /* Hides overflowing text */
-      min-width: 200px; /* Ensures a minimum width */
-      max-width: 90%; /* Prevents button from being too wide */
+    font-size: 0.9rem;
+    padding: 8px 16px;
   }
 
-  button:hover {
-      background-color: #004d99;
+  label {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.2rem;
   }
 
-  @media (max-width: 768px) {
-      button {
-          font-size: clamp(0.8rem, 2vw, 1rem); /* Slightly smaller text for tablets */
-          padding: 8px 16px; /* Adjusts padding for smaller screens */
-      }
+  input[type="button"],
+  button {
+    font-size: 0.8rem;
+    padding: 6px 12px;
   }
 
-  @media (max-width: 480px) {
-      button {
-          font-size: clamp(0.7rem, 2vw, 0.9rem); /* Further adjusts text size for small devices */
-          padding: 6px 12px;
-      }
+  label {
+    font-size: 0.8rem;
+  }
+}
+
+/* Button Styling */
+/* Button Styling */
+button {
+  display: inline-block;
+  /* Ensures button fits content */
+  font-size: clamp(0.9rem, 2.5vw, 1.2rem);
+  /* Adjusts font size dynamically */
+  font-weight: bold;
+  /* Makes text stand out */
+  margin-top: 20px;
+  padding: 10px 20px;
+  /* Space inside button */
+  border: none;
+  border-radius: 5px;
+  background-color: #0066cc;
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+  /* Prevents text wrapping */
+  text-align: center;
+  box-sizing: border-box;
+  /* Ensures consistent padding and sizing */
+  overflow: hidden;
+  /* Hides overflowing text */
+  min-width: 200px;
+  /* Ensures a minimum width */
+  max-width: 90%;
+  /* Prevents button from being too wide */
+}
+
+button:hover {
+  background-color: #004d99;
+}
+
+@media (max-width: 768px) {
+  button {
+    font-size: clamp(0.8rem, 2vw, 1rem);
+    /* Slightly smaller text for tablets */
+    padding: 8px 16px;
+    /* Adjusts padding for smaller screens */
+  }
+}
+
+@media (max-width: 480px) {
+  button {
+    font-size: clamp(0.7rem, 2vw, 0.9rem);
+    /* Further adjusts text size for small devices */
+    padding: 6px 12px;
+  }
+}
+
+
+
+
+
+
+/* Container for checkboxes */
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  /* Stack checkboxes vertically */
+  gap: 10px;
+  /* Add spacing between items */
+  padding: 10px;
+}
+
+/* Checkbox labels styling */
+.checkbox-group label {
+  display: flex;
+  align-items: center;
+  font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+  /* Responsive font size */
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+}
+
+/* Custom checkbox styling */
+.checkbox-group input[type="checkbox"] {
+  appearance: none;
+  /* Remove default checkbox */
+  width: 1.5vw;
+  height: 1.5vw;
+  border: 2px solid #0066cc;
+  border-radius: 4px;
+  /* Rounded corners */
+  outline: none;
+  margin-right: 10px;
+  /* Spacing between checkbox and label */
+  background-color: white;
+  cursor: pointer;
+  transition: background-color 0.3s, border-color 0.3s;
+}
+
+/* Checkbox checked state */
+.checkbox-group input[type="checkbox"]:checked {
+  background-color: #0066cc;
+  border-color: #004d99;
+  position: relative;
+}
+
+/* Checkbox hover effect */
+.checkbox-group input[type="checkbox"]:hover {
+  border-color: #004d99;
+}
+
+/* Adjust for smaller devices */
+@media (max-width: 480px) {
+  .checkbox-group label {
+    font-size: 0.9rem;
+    /* Slightly smaller text */
   }
 
+  .checkbox-group input[type="checkbox"] {
+    width: 30px;
+    height: 30px;
+    /* Smaller checkbox size */
+  }
+}
 
 
 
 
 
-      /* Container for checkboxes */
-      .checkbox-group {
-        display: flex;
-        flex-direction: column; /* Stack checkboxes vertically */
-        gap: 10px; /* Add spacing between items */
-        padding: 10px;
-    }
-  
-    /* Checkbox labels styling */
-    .checkbox-group label {
-        display: flex;
-        align-items: center;
-        font-size: clamp(0.9rem, 2.5vw, 1.1rem); /* Responsive font size */
-        font-weight: 500;
-        color: white;
-        cursor: pointer;
-    }
-  
-    /* Custom checkbox styling */
-    .checkbox-group input[type="checkbox"] {
-        appearance: none; /* Remove default checkbox */
-        width: 1.5vw;
-        height: 1.5vw;
-        border: 2px solid #0066cc;
-        border-radius: 4px; /* Rounded corners */
-        outline: none;
-        margin-right: 10px; /* Spacing between checkbox and label */
-        background-color: white;
-        cursor: pointer;
-        transition: background-color 0.3s, border-color 0.3s;
-    }
-  
-    /* Checkbox checked state */
-    .checkbox-group input[type="checkbox"]:checked {
-        background-color: #0066cc;
-        border-color: #004d99;
-        position: relative;
-    }
-  
-    /* Checkbox hover effect */
-    .checkbox-group input[type="checkbox"]:hover {
-        border-color: #004d99;
-    }
-  
-    /* Adjust for smaller devices */
-    @media (max-width: 480px) {
-        .checkbox-group label {
-            font-size: 0.9rem; /* Slightly smaller text */
-        }
-  
-        .checkbox-group input[type="checkbox"] {
-            width: 30px;
-            height: 30px; /* Smaller checkbox size */
-        }
-    }
-  
-  
-  
 
+
+
+
+div.item {
+  /* To correctly align image, regardless of content height: */
+  vertical-align: top;
+  /* display: inline-block; */ 
+  /* To horizontally center images and caption */
+  text-align: center;
+  /* The width of the container also implies margin around the images. */
+  width: 30%;
+  /* aspect-ratio: 1; */
+  aspect-ratio: 1 / 1; 
+  
+}
+img {
+  max-width: 100%;
+  max-height: 100%;
+  /* object-fit: contain; */
+  /* display: block; */
+  margin: auto;
+  background-color: grey;
+}
+.caption {
+  /* Make the caption a block so it occupies its own line. */
+  display: block;
+}

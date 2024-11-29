@@ -51,16 +51,6 @@ class_info_dict = {}
 #(ONLY FOR CSV LABELS) each class info dictionary also contains a dictionary of csv labeled images (ex. class_info_dict['folder_id']['csv_labeled_images']---> dict of image paths as keys, and classes as values)
 # each class info dictionary also contains a list of unlabeled images from both folders and csv (ex. class_info_dict['folder_id']['unlabeled_images'] ---> list of paths to unlabeled images)
 
-def generateUUID(length): #generate UUID for special filename characters
-    random = str(uuid.uuid4()) # Convert UUID format to a Python string.
-    random = random.replace("-","") # Remove the UUID '-'.
-    return random[0:length] # Return the random string.
-
-space_id = generateUUID(10)
-left_par_id = generateUUID(10)    #encoding invalid characters, then decoding them when user downloads
-right_par_id = generateUUID(10)
-
-
 def delete_dir(path):
     shutil.rmtree(path,ignore_errors=True)
 
@@ -143,7 +133,7 @@ def download(id):
             thread3 = threading.Thread(target=delete_file,args=(f'{upload_folder_path}/{download_file}',))
             thread3.start()
 
-            new_download_file_name = download_file.replace(id,'').replace(space_id,' ').replace(left_par_id,'(').replace(right_par_id,')')
+            new_download_file_name = download_file.replace(id,'')#.replace(space_id,' ').replace(left_par_id,'(').replace(right_par_id,')')
             print('download file:',download_file)
             return send_file(os.path.join(upload_folder_path, download_file), as_attachment=True,download_name=new_download_file_name)
 
@@ -336,6 +326,7 @@ def receive_folder_files(folder_id,last_upload):
     total_files = len(files)
     file_saved_count = 0
     directory_to_upload = None
+    
     for file in files:  
         filepath = find_dirs_of_filepath(file.filename,folder_id)
         if not os.path.exists(filepath): 
@@ -379,7 +370,7 @@ def upload():
     file = request.files['file']
     file_id = request.form['id']
     dict_with_interactive_image_paths[file_id] = 'upload not finished'
-    file.filename = file.filename.replace(' ',space_id).replace('(',left_par_id).replace(')',right_par_id)
+    # file.filename = file.filename.replace(' ',space_id).replace('(',left_par_id).replace(')',right_par_id)
     print("file name:",    file.filename)
 
     save_path = os.path.join(upload_folder_path, file_id+secure_filename(file.filename))

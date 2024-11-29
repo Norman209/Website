@@ -2,10 +2,10 @@
 
 let originalImageWidth;
 let originalImageHeight;
-let image_ids = ['blur_sample_image', 'blur_normal_sample_image', 'rotate_normal_sample_image', 'rotate_sample_image', 'rotate_sample_image2','grayscale_sample_image','clockwise_sample_img','counter_clockwise_sample_img','upside_down_sample_img','vertical_flip_sample_img','horizontal_flip_sample_img','crop_sample_img','crop_sample_img2']
+let image_ids = ['blur_sample_image', 'blur_normal_sample_image', 'rotate_normal_sample_image', 'rotate_sample_image', 'rotate_sample_image2', 'grayscale_sample_image', 'clockwise_sample_img', 'counter_clockwise_sample_img', 'upside_down_sample_img', 'vertical_flip_sample_img', 'horizontal_flip_sample_img', 'crop_sample_img', 'crop_sample_img2']
 
 let folder_id = "id" + Math.random().toString(16).slice(2);
-console.log("folder id:",folder_id)
+console.log("folder id:", folder_id)
 let input_ids = ['Flip_check_box', '90° rotate_check_box', 'Crop_checkbox', 'grayscale_checkbox', 'Rotate_checkbox', 'blur_checkbox', 'Expansion', 'grayscale_preprocess', 'resize_preprocess', 'submit'];
 console.log('JAVASCRIPT STARTED');
 window.onload = function () {
@@ -15,6 +15,30 @@ window.onload = function () {
 };
 
 
+class range_input_scripts {
+
+    update_probabilities() {
+        let sliders = ['Rotate_limit', 'blur_limit', 'grayscale_probability'];
+        let i = 0
+        while (i < sliders.length) {
+
+            let slider = document.getElementById(sliders[i]);
+            let show_slider = document.getElementById(`show_${sliders[i]}`)
+            show_slider.innerText = slider.value
+            if (sliders[i] === 'blur_limit') {
+                // TODO: CHANGE SOURCE OF BLUR IMAGE HERE
+                document.getElementById('blur_limit_caption').innerText = String(slider.value) + 'px'
+            }
+            if (sliders[i] === 'Rotate_limit') {
+                document.getElementById('rotate_limit_caption').innerText = String(document.getElementById(sliders[i]).value) + '°'
+                document.getElementById('rotate_limit_caption2').innerText = String(-1 * document.getElementById(sliders[i]).value) + '°'
+            }
+
+            i++
+        }
+    }
+}
+let range_input_methods = new range_input_scripts();
 
 let default_upload_option = 'folder'
 function chunkDictionary(dict, chunkSize) {
@@ -41,41 +65,132 @@ function chunkDictionary(dict, chunkSize) {
 
 
 function grayscale_preview_images() {
-    let images = document.getElementsByClassName('sample_image')
+    const images = document.querySelectorAll('img');
     if (document.getElementById('grayscale_preprocess').checked) {
         for (i = 0; i < images.length; i++) {
-                images[i].style.filter = 'grayscale(100%)'
+            let img = document.getElementById(images[i].id)
+            img.style.filter = 'grayscale(100%)'
         }
     }
     else {
         for (i = 0; i < images.length; i++) {
-            if(images[i].id!=="grayscale_sample_image"){
-                images[i].style.filter = 'grayscale(0%)'
+            if (images[i].id !== "grayscale_sample_image") {
+                document.getElementById(images[i].id).style.filter = 'grayscale(0%)'
             }
         }
     }
 }
+function send_dataset() {
+    console.log('sending')
+    //TODO: only do this if there is a zip file in dropzone
+    if (default_upload_option === 'zip') {
+        var dropzone = Dropzone.forElement('#dropper');
+        if (dropzone.getQueuedFiles().length > 0) {
+            document.getElementById('augmentation').style.opacity = '25%';
+            document.getElementById('Pre-Proccessing').style.opacity = '25%';
+            dropzone.processQueue();
+        }
+    }
 
-function resize_preview_images(){
-    let images = document.getElementsByClassName('sample_image')
+    else {
+        if (document.getElementById('design').files.length > 0) {
+            console.log('sending folder')
+            document.getElementById('upload_progress').style.display = 'block';
+            document.getElementById('dropzone_buttons').style.display = 'none';
+            upload_folder();
+        }
+    }
+}
+function check_if_image(data) {
+    let valid_extensions = ['.png', '.jpg', '.jpeg', '.tiff', '.bmp']
+    for (i = 0; i < valid_extensions.length; i++) {
+        if (data.includes(valid_extensions[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+function resize_preview_images() {
+    const items = document.getElementsByClassName("item");
+    const images = document.querySelectorAll('img');
     if (document.getElementById('resize_preprocess').checked) {
-        document.getElementById("resize_preprocess_pop_up").style.display = "block"
-        for (i = 0; i < images.length; i++) {
-                // images[i].style.filter = 'grayscale(100%)'
+        let selectedWidth = document.getElementById("input_width").value;
+        let selectedHeight = document.getElementById("input_height").value;
+        console.log("selected Width:", selectedWidth)
+        console.log("selected Height:", selectedHeight)
+        let aspectRatio = selectedWidth / selectedHeight;
+        document.getElementById("resize_preprocess_pop_up").style.display = "block";
+        let imageMaxHeight = document.getElementById("resizeItem").getBoundingClientRect().height
+        let imageMaxWidth = document.getElementById("resizeItem").getBoundingClientRect().width
+        for (i = 0; i < items.length; i++) {
+            // images[i].style.filter = 'grayscale(100%)'
 
-                // images[i].style.width = 
-                // images[i].style.height =  
+            // items[i].style.aspectRatio = aspectRatio;
+            if ((selectedHeight > imageMaxHeight) || (selectedWidth > imageMaxWidth)) {
+                if (aspectRatio > 1) {
+                    console.log("aspect ratio greater than 1")
+                    document.getElementById(images[i].id).style.height = imageMaxHeight/aspectRatio + "px"
+                    document.getElementById(images[i].id).style.width = imageMaxWidth + "px"
+                }
+                else if (aspectRatio < 1) {
+                    console.log("aspect ratio less than 1")
+                    document.getElementById(images[i].id).style.height = imageMaxHeight + "px"
+                    document.getElementById(images[i].id).style.width = imageMaxWidth*aspectRatio + "px"
+                }
+                if(aspectRatio==1){
+                    console.log("aspect ratio is 1")
+                    document.getElementById(images[i].id).style.height = imageMaxHeight + "px"
+                    document.getElementById(images[i].id).style.width = imageMaxWidth + "px"
+                }
+            }
+            else {
+                document.getElementById(images[i].id).style.height = selectedHeight + "px"
+                document.getElementById(images[i].id).style.width = selectedWidth + "px"
+            }
+
 
         }
+
     }
     else {
-        document.getElementById("resize_preprocess_pop_up").style.display = "none"
-        for (i = 0; i < images.length; i++) {
-            document.getElementById(image_ids[i]).style.width = 15*imageWidthToHeightRatio+"vw";
-            document.getElementById(image_ids[i]).style.height = 15*imageHeightToWidthRatio+"vw";
+        for (i = 0; i < items.length; i++) {
+            // document.getElementById(image_ids[i]).style.width = 15*imageWidthToHeightRatio+"vw";
+            // document.getElementById(image_ids[i]).style.height = 15*imageHeightToWidthRatio+"vw";
+            // items[i].style.aspectRatio = originalImageWidth/originalImageHeight //making the width 30% of the UI
+            // document.getElementById(images[i].id).style.aspectRatio = originalImageWidth/originalImageHeight
+
+            document.getElementById(images[i].id).style.height = originalImageHeight + "px"
+            document.getElementById(images[i].id).style.width = originalImageWidth + "px"
+            // document.getElementById(images[i].id).style.height = heightToWidthRatio*widthToHeightRatio*.3*width+"px" 
+
         }
+        document.getElementById("resize_preprocess_pop_up").style.display = "none";
     }
 
+}
+async function submit_everything() {
+    alert("Augmenting uploaded dataset now...");
+    let aug_form_data = collect_aug_data();
+    disable_inputs();
+    let formData = new FormData();
+    formData.append('aug_data', aug_form_data)
+    //TODO: method here to call augmentation for specific dataset id and send over augmentation data
+    //ex. augment_dataset(dataset_id,augmentation_form_data);
+    //once dataset is finished augmenting
+    await fetch('/augment/' + folder_id, { body: formData, method: 'post' }).then(response => {
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+            return response.json().then(data => {
+                data1 = JSON.stringify(data);
+            });
+        } else {
+            return response.text().then(text => {
+                console.log('text:', text)
+            });
+        }
+    });
+    document.getElementById('download_tag').innerText = 'click here to download augmented dataset';
+    document.getElementById('download_tag').href = '/download/' + folder_id;
 }
 
 async function change_all_preview_images(pre_proccessing_option) { //this function changes the preview images based on chosen pre-proccessing options
@@ -111,11 +226,36 @@ function close_download_tag() {
     document.getElementById('Pre-Proccessing').style.opacity = '25%';
 }
 
+function set_zip_or_folder_upload() {
+    folder_id = "id" + Math.random().toString(16).slice(2);
+    console.log("folder id:", folder_id)
+    var dropzoneElement = document.getElementById('dropper');
+    Dropzone.forElement('#dropper').removeAllFiles(true);
+    let zip_option = document.getElementById('zip');
+    let folder_option = document.getElementById("folder");
+    if (zip_option.checked) {
+        document.getElementById('design').value = null;
+        console.log('doing zip uploads');
+        default_upload_option = 'zip'
+        document.getElementById('folder_upload_buttons').style.display = 'none';
+        document.getElementById('zip_upload_buttons').style.display = 'block';
+    }
+    if (folder_option.checked) {
+        document.getElementById('design').value = null;
+        console.log('doing folder uploads');
+        default_upload_option = 'folder'
+        document.getElementById('folder_upload_buttons').style.display = 'block';
+        document.getElementById('zip_upload_buttons').style.display = 'none';
+    }
+}
 
-
-$( "#slider-range" ).slider({
+$("#slider-range").slider({
     range: true
-  });
+});
+
+
+
+
 
 async function upload_folder() {
     document.getElementById('select_folder').style.display = 'none';
@@ -127,7 +267,7 @@ async function upload_folder() {
     let last_upload = 'false';
     for (i = 0; i < chunks.length; i++) {
         console.log('i:', i, 'chunks length:', chunks.length);
-        if((i)==chunks.length-1){
+        if ((i) == chunks.length - 1) {
             document.getElementById("visualizationGenerationIndicator").style.display = "block";
         }
         last_upload = String((i + 1) === chunks.length);
@@ -205,7 +345,7 @@ async function upload_folder() {
 
 function collect_aug_data() {
     aug_list = [];
-    augs_checkboxes = ['Flip_check_box','blur_checkbox', "90° rotate_check_box", 'Crop_checkbox', 'Rotate_checkbox', 'blur_checkbox']
+    augs_checkboxes = ['Flip_check_box', 'blur_checkbox', "90° rotate_check_box", 'Crop_checkbox', 'Rotate_checkbox', 'blur_checkbox']
     let flip_checked = document.getElementById('Flip_check_box').checked;//check if blur is checked or not
     let rotation_90_checked = document.getElementById("90° rotate_check_box").checked;
     let crop_checked = document.getElementById('Crop_checkbox').checked;
@@ -216,40 +356,40 @@ function collect_aug_data() {
 
     //send pre-process info first
 
-    if(preProcessGrayScaleChecked){
+    if (preProcessGrayScaleChecked) {
         aug_list.push('grayscalePreProcess');
     }
     if (flip_checked) {
         vertically_flipped = document.getElementById('vertical_flip').checked;
         horizontally_flipped = document.getElementById('horizontal_flip').checked;
-        aug_list.push('flip'+"-"+vertically_flipped+"-"+horizontally_flipped) //items in order: vertically flipped, horizontally flipped, vertical prob, horizontal prob
+        aug_list.push('flip' + "-" + vertically_flipped + "-" + horizontally_flipped) //items in order: vertically flipped, horizontally flipped, vertical prob, horizontal prob
     }
     if (rotation_90_checked) {
         let clockwiseRotated = document.getElementById("Clockwise").checked
         let counterClockwiseRotated = document.getElementById("Counter-Clockwise").checked
         let upsideDownRotated = document.getElementById("Upside Down").checked
-        aug_list.push('90_rotate'+"-"+clockwiseRotated+"-"+counterClockwiseRotated+"-"+upsideDownRotated);
+        aug_list.push('90_rotate' + "-" + clockwiseRotated + "-" + counterClockwiseRotated + "-" + upsideDownRotated);
 
     }
     if (crop_checked) {
         console.log("crop checked")
         let min_crop_value = $("#slider-range").slider("values", 0)
         let max_crop_value = $("#slider-range").slider("values", 1)
-        aug_list.push("crop"+"-"+min_crop_value+"-"+max_crop_value);
+        aug_list.push("crop" + "-" + min_crop_value + "-" + max_crop_value);
     }
     if (rotate_checked) {
         let degreesRotated = document.getElementById("Rotate_limit").value
-        aug_list.push('rotate'+"-"+degreesRotated);
+        aug_list.push('rotate' + "-" + degreesRotated);
     }
     if (blur_checked) {
         let blurValue = document.getElementById("blur_limit").value
-        aug_list.push('blur'+"-"+blurValue);
+        aug_list.push('blur' + "-" + blurValue);
     }
     if (grayscale_checked) {
         let percentOutputtedImagesToGrayscale = document.getElementById("blur_limit").value
-        aug_list.push('grayscale'+"-"+percentOutputtedImagesToGrayscale);
+        aug_list.push('grayscale' + "-" + percentOutputtedImagesToGrayscale);
     }
-   
+
     //TODO: return form data instead of list
     return JSON.stringify(aug_list);
 }
@@ -262,7 +402,7 @@ class display_popups {
         if (check_box.checked == true) {
             pop_up.style.display = 'block';
             console.log('checked checkbox');
-            document.getElementById("Rotate").style = "display:flex;width:auto;align-items:center;"
+            // document.getElementById("Rotate").style = "display:flex;width:auto;align-items:center;"
         }
         if (check_box.checked == false) {
             pop_up.style.display = 'none';
@@ -276,10 +416,10 @@ class display_popups {
         if (check_box.checked == true) {
             pop_up.style.display = 'block';
             console.log('checked checkbox');
-                    }
+        }
         if (check_box.checked == false) {
             pop_up.style.display = 'none';
-            
+
         }
     }
     flip_click_checkbox() {
@@ -300,13 +440,13 @@ class display_popups {
         let pop_up = document.getElementById('vertical_flip_popup')
         if (vertical_flip_checkbox.checked == true) {
             pop_up.style.display = 'block';
-console.log("checked box");
+            console.log("checked box");
             // document.getElementById("vertical_flip_sample_img").style.display = "block";
-            
+
         }
         else {
             pop_up.style.display = 'none';
-console.log("unchecked box");
+            console.log("unchecked box");
         }
     }
     horizontalflip_click_checkbox() {
@@ -314,12 +454,12 @@ console.log("unchecked box");
         let pop_up = document.getElementById('horizontal_flip_popup')
         if (horizontal_flip_checkbox.checked == true) {
             pop_up.style.display = 'block';
-console.log("checked box");
+            console.log("checked box");
             // document.getElementById("vertical_flip_sample_img")
         }
         else {
             pop_up.style.display = 'none';
-console.log("unchecked box");
+            console.log("unchecked box");
         }
     }
 
@@ -332,12 +472,12 @@ console.log("unchecked box");
         }
         if (rotate_90_box.checked == false) {
             rotate_90_pop_up.style.display = 'none';
-            }
+        }
     }
 
     clockwise_click_checkbox() {
         let clockwise_box = document.getElementById('Clockwise')
-        let clockwise_pop_up = document.getElementById('clockwise_sample_img')
+        let clockwise_pop_up = document.getElementById('clockwise_popup')
         if (clockwise_box.checked == true) {
             clockwise_pop_up.style.display = 'block';
             ('checked checkbox')
@@ -348,7 +488,7 @@ console.log("unchecked box");
     }
     upside_down_click_checkbox() {
         let upside_down_box = document.getElementById('Upside Down')
-        let upside_down_pop_up = document.getElementById('upside_down_sample_img')
+        let upside_down_pop_up = document.getElementById('upside_down_popup')
         if (upside_down_box.checked == true) {
             upside_down_pop_up.style.display = 'block';
             ('checked checkbox')
@@ -359,7 +499,7 @@ console.log("unchecked box");
     }
     counter_clockwise_click_checkbox() {
         let counter_clockwise_box = document.getElementById('Counter-Clockwise')
-        let counter_clockwise_pop_up = document.getElementById('counter_clockwise_sample_img')
+        let counter_clockwise_pop_up = document.getElementById('counter-clockwise_popup')
         if (counter_clockwise_box.checked == true) {
             counter_clockwise_pop_up.style.display = 'block';
             ('checked checkbox')
@@ -373,16 +513,16 @@ console.log("unchecked box");
         let pop_up = document.getElementById('crop_pop_up')
         let check_box = document.getElementById('Crop_checkbox')
         if (check_box.checked == true) {
-            pop_up.style.display="block";
+            pop_up.style.display = "block";
             // pop_up.style.cssText = "";
             // console.log('checked checkbox')
         }
         if (check_box.checked == false) {
             // pop_up.style.display = "position: absolute; left: -1000px";
-                        // pop_up.style.position='absolute';
+            // pop_up.style.position='absolute';
             // pop_up.style.left='-1000px';
             pop_up.style.display = 'none';
-            
+
         }
     }
     grayscale_click_checkbox() {
@@ -391,14 +531,14 @@ console.log("unchecked box");
         if (check_box.checked == true) {
             console.log(pop_up.style.display)
             pop_up.style.cssText = "";
-                    }
+        }
         if (check_box.checked == false) {
             // pop_up.style.display = "position: absolute; left: -1000px";
             console.log(pop_up.style.display)
             // pop_up.style.position='absolute';
             // pop_up.style.left='-1000px';
             pop_up.style.display = 'none';
-                    }
+        }
     }
 
 
@@ -407,7 +547,7 @@ let display_popups_methods = new display_popups();
 
 function reset_inputs() {
     for (i = 0; i < input_ids.length; i++) {
-                // input_ids[i].disabled = true;
+        // input_ids[i].disabled = true;
         document.getElementById(input_ids[i]).checked = false;
     }
     for (i = 0; i < pop_up_ids.length; i++) {
@@ -421,44 +561,18 @@ function disable_inputs() {
     for (i = 0; i < input_ids.length; i++) {
         //children[i].disabled = true;
         let input = document.getElementById(input_ids[i]);
-                input.disabled = true;
+        input.disabled = true;
         document.getElementById('augmentation').style.opacity = '25%';
         document.getElementById('Pre-Proccessing').style.opacity = '25%';
         document.getElementById('select_folder').style.display = 'block';
     }
 }
 
-function updateImageWidths(){  //updates image and figcaption widths
-    let divWidth;
-    for(i=0;i<image_ids.length;i++){
-        let element = document.getElementById('augmentation')
-        var positionInfo = element.getBoundingClientRect();
-        var height = positionInfo.height;
-        var width = positionInfo.width;
-        divWidth=width
-        console.log("width:",width)
-        document.getElementById(image_ids[i]).style.width = .3*width+"px"
-    }
-    // Select all <figcaption> elements on the page
-    const figcaptions = document.querySelectorAll('figcaption');
 
-    // Convert NodeList to an array (optional)
-    const figcaptionArray = Array.from(figcaptions);
-
-    console.log(figcaptionArray);
-    
-    for(i=0;i<figcaptionArray.length;i++){
-        // let figcaption = document.getElementById(figcaptionArray[i])
-        // figcaption.style.width = .3*width+"px"
-        console.log(figcaptionArray[i].style.width=.3*divWidth+"px");
-    }
-    console.log("resized");
-}
-updateImageWidths();
-window.addEventListener('resize', updateImageWidths);
 
 
 async function enable_inputs() {
+    console.log("enabling inputs")
     reset_inputs();
     document.getElementById('dataset_upload_progress').value = 0
     //upload_progress
@@ -490,8 +604,8 @@ async function enable_inputs() {
     document.getElementById("counter_clockwise_sample_img").src = `/static/interactive_images_uploads/${folder_id}/counter_clockwise/counter_clockwise${sample_image_extension}`
     document.getElementById("clockwise_sample_img").src = `/static/interactive_images_uploads/${folder_id}/clockwise/clockwise${sample_image_extension}`
     document.getElementById("upside_down_sample_img").src = `/static/interactive_images_uploads/${folder_id}/upside_down/upside_down${sample_image_extension}`
-    document.getElementById("vertical_flip_sample_img").src = `/static/interactive_images_uploads/${folder_id}/sample${sample_image_extension}` 
-    document.getElementById("horizontal_flip_sample_img").src = `/static/interactive_images_uploads/${folder_id}/sample${sample_image_extension}` 
+    document.getElementById("vertical_flip_sample_img").src = `/static/interactive_images_uploads/${folder_id}/sample${sample_image_extension}`
+    document.getElementById("horizontal_flip_sample_img").src = `/static/interactive_images_uploads/${folder_id}/sample${sample_image_extension}`
     // document.getElementById("horizontal_flip_sample_img").src = "{{ url_for('/static/interactive_images_uploads', filename=f'{sample}/{sample_image_extension}') }}"
 
     document.getElementById('rotate_sample_image2').src = `/static/interactive_images_uploads/${folder_id}/rotate/${String((Number(-rotate_slider.value)))}${sample_image_extension}`
@@ -499,9 +613,9 @@ async function enable_inputs() {
     // crop sample img 1 will hold min crop %, crop sample img 2 will hold max crop %
     document.getElementById('crop_sample_img').src = `/static/interactive_images_uploads/${folder_id}/crop/${String((Number(1)))}${sample_image_extension}`
     document.getElementById('crop_sample_img2').src = `/static/interactive_images_uploads/${folder_id}/crop/${String((Number(28)))}${sample_image_extension}`
-
-
-    
+    document.getElementById("flip_normal_sample_img").src = `/static/interactive_images_uploads/${folder_id}/sample${sample_image_extension}`
+    document.getElementById("90_rotate_normal_sample_img").src = `/static/interactive_images_uploads/${folder_id}/sample${sample_image_extension}`
+    document.getElementById("resize_sample_img").src = `/static/interactive_images_uploads/${folder_id}/sample${sample_image_extension}`
 
     // making the dictionaries where the images will be stored
     const blur_images = {};
@@ -565,231 +679,171 @@ async function enable_inputs() {
         }
     });
     //making it so that the crop slider shows preview images
-    $( function() {
-        $( "#slider-range" ).slider({
-          range: true,
-          min: 1,
-          max: 99,
-          values: [1, 28],
-          slide: function( event, ui ) {
-            $( "#amount" ).val(ui.values[ 0 ] +"%" +" - " + ui.values[ 1 ]+"%" );
-            console.log("Selected range:", ui.values[0], ui.values[1]);
-            const imgElement1 = document.getElementById('crop_sample_img');
-            const imgElement2 = document.getElementById('crop_sample_img2');
-            if(crop_images[ui.values[0]]){
-                imgElement1.src = crop_images[ui.values[0]]
-            }
-            if(crop_images[ui.values[1]]){
-                imgElement2.src = crop_images[ui.values[1]]
-            }
+    $(function () {
+        $("#slider-range").slider({
+            range: true,
+            min: 1,
+            max: 99,
+            values: [1, 28],
+            slide: function (event, ui) {
+                $("#amount").val(ui.values[0] + "%" + " - " + ui.values[1] + "%");
+                console.log("Selected range:", ui.values[0], ui.values[1]);
+                const imgElement1 = document.getElementById('crop_sample_img');
+                const imgElement2 = document.getElementById('crop_sample_img2');
+                if (crop_images[ui.values[0]]) {
+                    imgElement1.src = crop_images[ui.values[0]]
+                }
+                if (crop_images[ui.values[1]]) {
+                    imgElement2.src = crop_images[ui.values[1]]
+                }
 
-          }
+            }
         });
-        $( "#amount" ).val(  $( "#slider-range" ).slider( "values", 0 ) +"%"+
-          " - " + $( "#slider-range" ).slider( "values", 1 ) +"%");
-      } );
-
-    let originalImageWidth = document.getElementById('blur_sample_image').width;
-    let originalImageHeight = document.getElementById('blur_sample_image').height;
-    let imageWidthToHeightRatio = originalImageWidth/originalImageHeight
-    let imageHeightToWidthRatio = originalImageHeight/originalImageWidth
-}
-
-
-class range_input_scripts {
-
-    update_probabilities() {
-        let sliders = ['Rotate_limit', 'blur_limit', 'grayscale_probability'];
-        let i = 0
-        while (i < sliders.length) {
-            
-            let slider = document.getElementById(sliders[i]);
-            let show_slider = document.getElementById(`show_${sliders[i]}`)
-            show_slider.innerText = slider.value
-            if (sliders[i] === 'blur_limit') {
-                // TODO: CHANGE SOURCE OF BLUR IMAGE HERE
-                document.getElementById('blur_limit_caption').innerText = String(slider.value) + 'px'
-            }
-if (sliders[i] === 'Rotate_limit') {
-                document.getElementById('rotate_limit_caption').innerText = String(document.getElementById(sliders[i]).value) + '°'
-                document.getElementById('rotate_limit_caption2').innerText = String(-1 * document.getElementById(sliders[i]).value) + '°'
-            }
-
-            i++
-        }
-    }
-}
-let data1;
-async function submit_everything() {
-    alert("Augmenting uploaded dataset now...");
-    let aug_form_data = collect_aug_data();
-    disable_inputs(); 
-    let formData = new FormData();
-    formData.append('aug_data', aug_form_data)
-    //TODO: method here to call augmentation for specific dataset id and send over augmentation data
-    //ex. augment_dataset(dataset_id,augmentation_form_data);
-    //once dataset is finished augmenting
-    await fetch('/augment/' + folder_id, { body: formData, method: 'post' }).then(response => {
-        const contentType = response.headers.get("content-type");
-        if (contentType && contentType.indexOf("application/json") !== -1) {
-            return response.json().then(data => {
-                data1 = JSON.stringify(data);
-            });
-        } else {
-            return response.text().then(text => {
-                console.log('text:', text)
-            });
-        }
+        $("#amount").val($("#slider-range").slider("values", 0) + "%" +
+            " - " + $("#slider-range").slider("values", 1) + "%");
     });
-    document.getElementById('download_tag').innerText = 'click here to download augmented dataset';
-    document.getElementById('download_tag').href = '/download/' + folder_id;
-}
+    document.getElementById("blur_pop_up").style.display = "block"
 
-
-class copy_paste_code_scripts {
-    copy_and_paste() {
-        let copy_text = document.getElementById('code_block'); // id of the textbox
-        copy_text.select();
-        navigator.clipboard.writeText(copy_text.value);
-        //document.execCommand("copy");
-        alert('copy and pasted augmentation code');
-    }
+    originalImageWidth = document.getElementById('blur_sample_image').getBoundingClientRect().width;
+    originalImageHeight = document.getElementById('blur_sample_image').getBoundingClientRect().height;
+    console.log("original image Width:", originalImageWidth)
+    console.log("original image Height:", originalImageHeight)
+    document.getElementById("blur_pop_up").style.display = "none"
 
 
 
-    // show_copy_and_paste_checkbox() {
-    //     /*let aug_string = "import albumentations as A\n" + "import cv2\n" +
-    //          "transform = A.Compose([\n" + "A.RandomCrop(width=256, height=256),\n" +
-    //          "A.HorizontalFlip(p=0.5),\n" +
-    //          "A.RandomBrightnessContrast(p=0.2)])\n";*/
-    //     let check_box_element = document.getElementById('copy_paste_div');
-    //     check_box_element.style.display = 'block';
-    //     let text_box = document.getElementById('code_block');
-    //     text_box.value = 'test';
-    //     folder_id = "id" + Math.random().toString(16).slice(2);
-    //     // Access Dropzone instance
-    //     close_download_tag();
-    //     var dropzone = Dropzone.forElement('#dropper');
-    //     // dropzone.processQueue();
-    //     //dropzone.removeAllFiles(true);
-    //     // sending over
+
+    let aspectRatio = originalImageWidth / originalImageHeight
+    const images = document.querySelectorAll('img');
+    const items = document.getElementsByClassName("item");
+    // document.getElementById("resize_preprocess_pop_up").style.display = "block";
+    // for (i = 0; i < items.length; i++) {
+    //     // images[i].style.filter = 'grayscale(100%)'
+    //     // items[i].style.height = items[i].getBoundingClientRect().width;
+    //     // items[i].style.aspectRatio = aspectRatio;
+    //     // images[i].style.height = document.getElementById("input_height").value+"px"
+    //     // images[i].style.height =  
+
     // }
-}
 
-let copy_paste_code_methods = new copy_paste_code_scripts();
-let range_input_methods = new range_input_scripts();
-function check_if_image(data) {
-    let valid_extensions = ['.png', '.jpg', '.jpeg', '.tiff', '.bmp']
-    for (i = 0; i < valid_extensions.length; i++) {
-        if (data.includes(valid_extensions[i])) {
-            return true;
+    // let range_input_methods = new range_input_scripts();
+
+
+    let data1;
+
+
+
+    class copy_paste_code_scripts {
+        copy_and_paste() {
+            let copy_text = document.getElementById('code_block'); // id of the textbox
+            copy_text.select();
+            navigator.clipboard.writeText(copy_text.value);
+            //document.execCommand("copy");
+            alert('copy and pasted augmentation code');
+        }
+
+
+
+        // show_copy_and_paste_checkbox() {
+        //     /*let aug_string = "import albumentations as A\n" + "import cv2\n" +
+        //          "transform = A.Compose([\n" + "A.RandomCrop(width=256, height=256),\n" +
+        //          "A.HorizontalFlip(p=0.5),\n" +
+        //          "A.RandomBrightnessContrast(p=0.2)])\n";*/
+        //     let check_box_element = document.getElementById('copy_paste_div');
+        //     check_box_element.style.display = 'block';
+        //     let text_box = document.getElementById('code_block');
+        //     text_box.value = 'test';
+        //     folder_id = "id" + Math.random().toString(16).slice(2);
+        //     // Access Dropzone instance
+        //     close_download_tag();
+        //     var dropzone = Dropzone.forElement('#dropper');
+        //     // dropzone.processQueue();
+        //     //dropzone.removeAllFiles(true);
+        //     // sending over
+        // }
+    }
+
+    let copy_paste_code_methods = new copy_paste_code_scripts();
+
+
+
+    Dropzone.options.dropper = {
+        paramName: 'file',
+        autoProcessQueue: true,
+        chunking: true,
+        forceChunking: true,
+        url: '/upload',
+        autoDiscover: true,
+        timeout: 1.8e+6,//30 minute timeout
+        init: function () {
+            // this.hiddenFileInput.setAttribute("webkitdirectory", true);
+            let totalChunks = 0; // Total number of chunks for the current file
+            let sentChunks = 0;  // Track how many chunks have been sent
+
+            this.on("addedfile", function (file) {
+                // Calculate total chunks when a file is added
+                totalChunks = Math.ceil(file.size / this.options.chunkSize);
+                sentChunks = 0; // Reset counter for the new file
+                console.log(`Total chunks to send: ${totalChunks}`);
+            });
+            this.on("queuecomplete", async function () {
+                this.removeAllFiles(true);
+                console.log('file id:', folder_id);
+                let data1 = 'test';
+                //wait for upload to finish, then enable inputs (augmentation options)
+                while (data1 !== 'none' && !(data1.includes('.'))) {
+                    console.log('checking if finished...')
+                    await fetch('/check_finished/' + folder_id).then(response => {
+                        const contentType = response.headers.get("content-type");
+                        if (contentType && contentType.indexOf("application/json") == -1) {
+                            return response.text().then(text => {
+                                console.log('response:', text)
+                                data1 = text;
+                            });
+                        }
+                    });
+                }
+                if (data1 === 'none') {
+                    document.getElementById("visualizationGenerationIndicator").style.display = "none";
+                    console.log('no images found. invalid dataset')
+
+                    alert('dataset invalid or no images found')
+                    folder_id = "id" + Math.random().toString(16).slice(2);
+
+                }
+                else {
+                    document.getElementById("visualizationGenerationIndicator").style.display = "none";
+                    console.log('dataset uploaded successfully, valid')
+                    sample_image_extension = data1;
+                    enable_inputs();
+                    document.getElementById('dropzone_buttons').style.display = 'none';
+                    //document.getElementById('test_image').src = data1
+                }
+
+            });
+            this.on("sending", function (file, xhr, formData) {
+                sentChunks++;
+                const remainingChunks = totalChunks - sentChunks;
+                console.log(`Sent chunk ${sentChunks}/${totalChunks}. Remaining chunks: ${remainingChunks}`);
+                if (remainingChunks == 0) {
+                    console.log("0 remaining chunks")
+                    document.getElementById("visualizationGenerationIndicator").style.display = "block";
+                }
+                // Add parameters to be sent with every chunk request
+                formData.append('id', folder_id);
+                console.log('sent chunk')
+            });
+        },
+
+        maxFilesize: 100 * 1e+3, // MB (100 gb) 
+        chunkSize: (1e+7), // bytes
+        acceptedFiles: '.zip',
+        maxFiles: 1,
+        parallelUploads: 1,
+        maxfilesexceeded: function (file) {
+            this.removeAllFiles();
+            this.addFile(file);
         }
     }
-    return false;
+
 }
-
-
-Dropzone.options.dropper = {
-    paramName: 'file',
-    autoProcessQueue: true,
-    chunking: true,
-    forceChunking: true,
-    url: '/upload',
-    autoDiscover: true,
-    timeout: 1.8e+6,//30 minute timeout
-    init: function () {
-        // this.hiddenFileInput.setAttribute("webkitdirectory", true);
-        this.on("queuecomplete", async function () {
-            this.removeAllFiles(true);
-            console.log('file id:', folder_id);
-            let data1 = 'test';
-            //wait for upload to finish, then enable inputs (augmentation options)
-            while (data1 !== 'none' && !(data1.includes('.'))) {
-                console.log('checking if finished...')
-                await fetch('/check_finished/' + folder_id).then(response => {
-                    const contentType = response.headers.get("content-type");
-                    if (contentType && contentType.indexOf("application/json") == -1) {
-                        return response.text().then(text => {
-                            console.log('response:', text)
-                            data1 = text;
-                        });
-                    }
-                });
-            }
-            if (data1 === 'none') {
-                console.log('no images found. invalid dataset')
-                alert('dataset invalid or no images found')
-                folder_id = "id" + Math.random().toString(16).slice(2);
-
-            }
-            else {
-                console.log('dataset uploaded successfully, valid')
-                sample_image_extension = data1;
-                enable_inputs();
-                document.getElementById('dropzone_buttons').style.display = 'none';
-                //document.getElementById('test_image').src = data1
-            }
-
-        });
-        this.on("sending", function (file, xhr, formData) {
-            // Add parameters to be sent with every chunk request
-            formData.append('id', folder_id);
-            console.log('sent chunk')
-        });
-    },
-
-    maxFilesize: 100 * 1e+3, // MB (100 gb) 
-    chunkSize: (1e+7), // bytes
-    acceptedFiles: '.zip',
-    maxFiles: 1,
-    parallelUploads: 1,
-    maxfilesexceeded: function (file) {
-        this.removeAllFiles();
-        this.addFile(file);
-    }
-}
-function set_zip_or_folder_upload() {
-    folder_id = "id" + Math.random().toString(16).slice(2);
-    console.log("folder id:",folder_id)
-    var dropzoneElement = document.getElementById('dropper');
-    Dropzone.forElement('#dropper').removeAllFiles(true);
-    let zip_option = document.getElementById('zip');
-    let folder_option = document.getElementById("folder");
-    if (zip_option.checked) {
-        document.getElementById('design').value = null;
-        console.log('doing zip uploads');
-        default_upload_option = 'zip'
-        document.getElementById('folder_upload_buttons').style.display = 'none';
-        document.getElementById('zip_upload_buttons').style.display = 'block';
-    }
-    if (folder_option.checked) {
-        document.getElementById('design').value = null;
-        console.log('doing folder uploads');
-        default_upload_option = 'folder'
-        document.getElementById('folder_upload_buttons').style.display = 'block';
-        document.getElementById('zip_upload_buttons').style.display = 'none';
-    }
-}
-
-
-function send_dataset() {
-console.log('sending')
-    //TODO: only do this if there is a zip file in dropzone
-    if (default_upload_option === 'zip') {
-        var dropzone = Dropzone.forElement('#dropper');
-        if (dropzone.getQueuedFiles().length > 0) {
-            document.getElementById('augmentation').style.opacity = '25%';
-            document.getElementById('Pre-Proccessing').style.opacity = '25%';
-            dropzone.processQueue();
-        }
-    }
-
-    else {
-        if (document.getElementById('design').files.length > 0) {
-console.log('sening folderx')
-            document.getElementById('upload_progress').style.display = 'block';
-            document.getElementById('dropzone_buttons').style.display = 'none';
-            upload_folder();
-        }
-    }
-    }

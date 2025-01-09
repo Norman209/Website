@@ -30,7 +30,8 @@ log = logging.getLogger('werkzeug')
 # log.setLevel(logging.ERROR)
 
 app = Flask(__name__, static_folder='/Users/milesnorman/Website/static',template_folder='/Users/milesnorman/Website/templates')
-app.config['UPLOAD_FOLDER']='upload_folder'
+app.config['UPLOAD_FOLDER']='/Users/milesnorman/Website/static/upload_folder'
+
 
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
@@ -47,9 +48,22 @@ dict_with_interactive_image_paths = {} #dict with image extensions that will be 
 
 class_info_dict = {}
 #class_info_dict contains folder ids as keys, and the class info dictionary for the given folder as a value.
-#(ONLY FOR FOLDER LABELS) each class info dictionary contains paths to classes as keys, and the classes images as values. (ex. class_info_dict['folder_id']['path_to_dog_class'] ---> list of paths to dog images)
-#(ONLY FOR CSV LABELS) each class info dictionary also contains a dictionary of csv labeled images (ex. class_info_dict['folder_id']['csv_labeled_images']---> dict of image paths as keys, and classes as values)
-# each class info dictionary also contains a list of unlabeled images from both folders and csv (ex. class_info_dict['folder_id']['unlabeled_images'] ---> list of paths to unlabeled images)
+#(ONLY FOR FOLDER LABELS) each class info dictionary contains paths to classes as keys, and the classes images as values. (ex. class_info_dict[folder_id]['path_to_dog_class'] ---> list of paths to dog images)
+#(ONLY FOR CSV LABELS) each class info dictionary also contains a dictionary of csv labeled images (ex. class_info_dict[folder_id]['csv_labeled_images']---> dict of image paths as keys, and classes as values)
+# each class info dictionary also contains a list of unlabeled images from both folders and csv (ex. class_info_dict[folder_id]['unlabeled_images'] ---> list of paths to unlabeled images)
+
+def getAllLabeledImagePaths(folder_id): # returns a list of image paths and their corresponding classes (ex. [[imgPath1,"dogClass"],[imgPath2,"catClass"]])
+    img_path_list = []
+    for key in class_info_dict[folder_id].keys():
+        if key != 'csv_labeled_images' and key!='unlabeled_images':
+            className = key #To be used later
+            for imgPath in class_info_dict[folder_id][className]:
+                img_path_list.append([imgPath,className]) #appending the path to the image and its corresponding class
+        elif key =='csv_labeled_images':
+            for imgPath in class_info_dict[folder_id]['csv_labeled_images'].keys():
+                className = class_info_dict[folder_id]['csv_labeled_images'][imgPath]
+                img_path_list.append([imgPath,className])
+    return img_path_list 
 
 def delete_dir(path):
     shutil.rmtree(path,ignore_errors=True)
@@ -58,7 +72,7 @@ def find_classes(csv_file, filenames):
     # Read the CSV file into a DataFrame
     df = pd.read_csv(csv_file)
     path_to_directory = '/'.join(csv_file.split('/')[:-1])
-    # print('path to direc:',path_to_directory)
+    # ##print('path to direc:',path_to_directory)
     # Extract the class names from the DataFrame
     class_names = df.columns[1:].tolist()  # Assuming first column is 'filename'
 
@@ -68,7 +82,7 @@ def find_classes(csv_file, filenames):
         # Find the row corresponding to the given filename
         file_row = df[df['filename'] == filename]
         if len(file_row) == 0:
-            print("Filename", filename, "not found.")
+            ##print("Filename", filename, "not found.")
             result[filename] = []
             unlabeled.append(filename)
             continue
@@ -102,9 +116,9 @@ def find_image_directories(root_dir):
 
 def unzip(path_to_zip_file):
     zip_filename = path_to_zip_file.split('/')[-1]
-    print("zip filename:",zip_filename)
+    # ##print("zip filename:",zip_filename)
     directory_to_extract_to = os.path.join(upload_folder_path,zip_filename[:-4])
-    print("dir to extrac to:",directory_to_extract_to)
+    # ##print("dir to extrac to:",directory_to_extract_to)
     os.mkdir(directory_to_extract_to)
     shutil.unpack_archive(path_to_zip_file,directory_to_extract_to,'zip') #unpacking zip file
     rand_filename = random_filename()
@@ -124,34 +138,39 @@ def find_sum_of_strings(list):
 
 
 
-@app.route('/download/<id>', methods=['GET']) #<id> is a dynamic parameter, meaning it's not a fixed value and is the text after '/download'
-def download(id):
+@app.route('/download/<id>/<uploadOption>', methods=['GET']) #<id> is a dynamic parameter, meaning it's not a fixed value and is the text after '/download'
+def download(id,uploadOption):
     for dir in os.listdir(upload_folder_path):
         if id in dir and dir[-4:]=='.zip':
-            print(id,'in',dir)
+            ##print(id,'in',dir)
             download_file = dir
             thread3 = threading.Thread(target=delete_file,args=(f'{upload_folder_path}/{download_file}',))
             thread3.start()
-
-            new_download_file_name = download_file.replace(id,'')#.replace(space_id,' ').replace(left_par_id,'(').replace(right_par_id,')')
-            print('download file:',download_file)
+            new_download_file_name = id
+            if uploadOption!="folder":
+                new_download_file_name = download_file.replace(id,'')#.replace(space_id,' ').replace(left_par_id,'(').replace(right_par_id,')')
+            else:
+                new_download_file_name = "Augmented Dataset"+".zip"
+            ##print('download file:',download_file)
             return send_file(os.path.join(upload_folder_path, download_file), as_attachment=True,download_name=new_download_file_name)
 
 
-@app.route('/check_finished/<zip_id>', methods=['GET'])
-def check_finished(zip_id):
-    print('FILE PATH BEING RETURNED:',dict_with_interactive_image_paths[zip_id])
-    return dict_with_interactive_image_paths[zip_id] #returns an image path
+@app.route('/check_finished/<id>', methods=['GET'])
+def check_finished(id):
+    ##print('FILE PATH BEING RETURNED:',dict_with_interactive_image_paths[id])
+    return dict_with_interactive_image_paths[id] #returns an image path
 
-def check_if_folder_is_valid(folder_path):
+
+
+def check_if_folder_is_valid(folder_path): #checks if folder has valid classes
     folder_name = folder_path.split('/')[-1]
-    not_classes = ['train','training','valid','test','validation','testing','val',folder_name,'__MACOSX']
+    not_classes = ['train','training','valid','test','validation','testing','val','__MACOSX',folder_name]
     train_dir_names = ['train','training']
     test_dir_names = ['test','testing']
     validation_dir_names = ['valid','validation']
 
     directories_with_images = find_image_directories(folder_path)
-    class_paths = [i for i in directories_with_images if i.split('/')[-1].lower() not in not_classes and i.split('/')[-1]!=folder_name]
+    class_paths = [i for i in directories_with_images if i.split('/')[-1].lower() not in not_classes]
     print('class names:',[i.split('/')[-1] for i in class_paths])     
     class_images = {}
     for path in class_paths:
@@ -168,7 +187,7 @@ def check_if_folder_is_valid(folder_path):
 
     # filename, class1, class2, class3, etc.
     # 000001.jpg, 0, 1, 0
-    # 000007.jpg, 0, 1, 0
+    # 000007.jpg, 0, 1, 0      
     # 000012.jpg, 0, 1, 0
     # 000013.jpg, 0, 1, 0
     class_images['csv_labeled_images'] = {} #csv labeled images is a dictionary containing the classes of all csv labeled images
@@ -194,7 +213,6 @@ def check_if_folder_is_valid(folder_path):
                         unlabeled_images = class_info[1]
                         for filepath in unlabeled_images:
                             class_images['unlabeled_images'].append(filepath)
-
                         class_images['csv_labeled_images'].update(class_info[0])
                         break
             else:
@@ -206,11 +224,11 @@ def check_if_folder_is_valid(folder_path):
 
     #class images should also include unlabeled
 
-    #print('unlabeled:',class_images['unlabeled_images'])
-    #print('total unlabeled:',len(class_images['unlabeled_images']))
-    print('total labeled with csv:',len(class_images['csv_labeled_images']))
-    #print('unlabeled:',len(class_images['unlabeled_images']))
-    print('class images value:',class_images[list(class_images.keys())[0]])
+    ###print('unlabeled:',class_images['unlabeled_images'])
+    ###print('total unlabeled:',len(class_images['unlabeled_images']))
+    ##print('total labeled with csv:',len(class_images['csv_labeled_images']))
+    ###print('unlabeled:',len(class_images['unlabeled_images']))
+    ##print('class images value:',class_images[list(class_images.keys())[0]])
     return class_images
     
 
@@ -251,9 +269,9 @@ def make_interactive_images(path,id): #TODO:
                     #First, we will generate the guassian blur images.
                     blur_decimal_range = np.arange(0.1, 25.1, 0.1) 
                     img_extension = '.jpg'
-                    # print('generating blur images....')
+                    # ##print('generating blur images....')
                     for sigma in blur_decimal_range:
-                        # print('sigma:',sigma)
+                        # ##print('sigma:',sigma)
                         for ext in valid_image_extensions:
                             if path_to_sample_image.endswith(ext):
                                 img_extension=ext
@@ -263,12 +281,12 @@ def make_interactive_images(path,id): #TODO:
                     
                     
                     #Next, we will generate the rotate images.
-                    # print('generating rotate images...')
+                    # ##print('generating rotate images...')
                     rotate_range = [deg for deg in range(-45,46)]
                     for deg in rotate_range:
                         output_path = os.path.join(rotate_path,str(deg)+img_extension)
                         apply_rotate(path_to_sample_image,deg,output_path)
-                        # print('deg:',deg)
+                        # ##print('deg:',deg)
 
 
                     #Next, we will generate the clockwise image, counter clockwise, and upside down image
@@ -286,7 +304,7 @@ def make_interactive_images(path,id): #TODO:
 
                     for perc in range(1,100):
                         crop(path_to_sample_image,perc,os.path.join(crop_path,f'{perc}'+img_extension))
-                        # print(f"crop image generated: {perc}%")
+                        # ##print(f"crop image generated: {perc}%")
 
 
                     return os.path.join(interactive_images_folder_path,id,filename) #returning path to sample images
@@ -313,7 +331,7 @@ def find_dirs_of_filepath(filepath,id):
         if not os.path.exists(directory_path):
             os.mkdir(directory_path)
     file_path = find_sum_of_strings(dir_names_and_filename)+'/'+filename
-    # print("file path:",file_path)
+    # ##print("file path:",file_path)
     return file_path
 
 
@@ -332,18 +350,19 @@ def receive_folder_files(folder_id,last_upload):
         if not os.path.exists(filepath): 
             file_saved_count+=1
             file.save(filepath)
-            #print(f'saved {file_saved_count} files out of {total_files}')
+            ###print(f'saved {file_saved_count} files out of {total_files}')
         else:
-            print('file already exists')
-    print('last upload:',last_upload)
+            ##print('file already exists')
+            pass
+    # #print('last upload:',last_upload)
     # finding folder path, and checking if it has images
     if folder_id not in os.listdir(upload_folder_path) and last_upload=='true':
         for folder_name in os.listdir(upload_folder_path):
             if folder_id in folder_name:
                 directory_to_upload = os.path.join(upload_folder_path,folder_name)
-                print("directory to upload:",directory_to_upload)
+                ##print("directory to upload:",directory_to_upload)
                 img_path = make_interactive_images(directory_to_upload,folder_id)
-                print("returned img path:",img_path)
+                ##print("returned img path:",img_path)
 
                 if img_path!='none':
                     class_data = check_if_folder_is_valid(directory_to_upload)
@@ -353,10 +372,10 @@ def receive_folder_files(folder_id,last_upload):
                             img_extension = i
                     dict_with_interactive_image_paths[folder_id] = img_extension
                 else:
-                    print('no images in dataset')
+                    ##print('no images in dataset')
                     dict_with_interactive_image_paths[folder_id] = 'none'
                 return dict_with_interactive_image_paths[folder_id]
-    #print('keys:',dict_with_interactive_image_paths.keys())
+    ###print('keys:',dict_with_interactive_image_paths.keys())
     return dict_with_interactive_image_paths[folder_id]
 
 
@@ -364,14 +383,93 @@ def delete_file(filename):
     time.sleep(.5)
     os.remove(filename)
 
-@app.route('/upload', methods=['GET','POST'])
+
+
+@app.route("/uploadMultiple", methods=["POST"])
+def upload_files():
+    id = request.form['id']
+    uploaded_folder_path =  os.path.join(app.config["UPLOAD_FOLDER"],id)
+    # ##print('file 1:',request.files['file[1]'])
+    """
+    Endpoint to handle multiple file uploads via Dropzone.
+    """
+    ###print("STARTED UPLOADING MULTIPLE")    
+    print('file keys:',request.files.keys())
+    print('form keys:',request.form.keys())
+    file_paths = []
+    for i,fileKey in enumerate(request.files.keys()):
+        file_path = os.path.join(uploaded_folder_path,request.form["file_path_"+str(i)])
+
+        file = request.files[fileKey]
+
+        name_of_dir_file_is_in = file_path.split('/')[-2]
+        file_path_list = file_path.split('/')
+        file_path_list.pop()
+        
+        file_path_list = ("/").join(file_path_list)
+
+        path_to_dir_of_file = file_path_list
+        if not os.path.exists(path_to_dir_of_file):
+            os.makedirs(os.path.join(uploaded_folder_path,path_to_dir_of_file))
+            file_paths.append(file_path)
+            
+        file.save(file_path)
+            # saved_files.append(file.filename)
+
+
+    if not request.files:
+        return jsonify({"error": "No files part in the request"}), 400
+    
+
+    saved_files = []
+    
+    ###print("LAST UPLOAD:",request.form['last upload'])
+    img_path = 'none'
+
+    # for i,key in enumerate(request.files.keys()):
+        
+    #     file = request.files[key]
+    #     if file.filename == "":
+    #         continue  # Skip files without a name
+    #     if not os.path.exists(uploaded_folder_path):
+    #         os.makedirs(uploaded_folder_path)
+    #     print("i:",i)
+    #     print("num of file paths:",len(file_paths))
+    #     file_path = os.path.join(uploaded_folder_path, secure_filename(file.filename))
+    #     file.save(file_paths[i])
+    #     saved_files.append(file.filename)
+    # ##print('interactive images path exists:',os.path.exists(os.path.join(interactive_images_folder_path,id)))
+    if (not os.path.exists(os.path.join(interactive_images_folder_path,id))) and (request.form['last upload']=='true'): 
+        img_path = make_interactive_images(uploaded_folder_path,id)
+        # ##print("img path:",img_path)
+    if img_path!='none' and request.form['last upload']=='true':
+        class_info = check_if_folder_is_valid(uploaded_folder_path)
+        class_info_dict[id] = class_info
+        # ##print("class info:",class_info_dict[id])
+        for i in valid_image_extensions:
+            if img_path.endswith(i):
+                img_extension = i
+        dict_with_interactive_image_paths[id] = img_extension #s
+    elif img_path=='none' and request.form['last upload']=='true':
+        dict_with_interactive_image_paths[id] = 'none'
+        # ##print('RETURNING',dict_with_interactive_image_paths[id])
+        return make_response(('Upload success', 200))
+    ##print("SAVED FILES:",saved_files)
+    return make_response(('Upload success', 200))
+
+@app.route('/uploadZip', methods=['GET','POST'])
 def upload():
  
-    file = request.files['file']
+   
+    ##print("file keys:",list(request.files.keys())[0])
+    ##print("form keys:",request.form.keys())
+    file = request.files[list(request.files.keys())[0]]
+    # file_id = request.form['id']
     file_id = request.form['id']
+    # total_files = 
     dict_with_interactive_image_paths[file_id] = 'upload not finished'
     # file.filename = file.filename.replace(' ',space_id).replace('(',left_par_id).replace(')',right_par_id)
-    print("file name:",    file.filename)
+    # ##print("file name:",    file.filename)
 
     save_path = os.path.join(upload_folder_path, file_id+secure_filename(file.filename))
 
@@ -392,7 +490,7 @@ def upload():
         return make_response(("Not sure why," " but we couldn't write the file to disk", 500))
 
     total_chunks = int(request.form['dztotalchunkcount'])
-    print(f'current chunks to total chunks: {current_chunk}/{total_chunks}')
+    ##print(f'current chunks to total chunks: {current_chunk}/{total_chunks}')
     if current_chunk + 1 == total_chunks:
 
         # This was the last chunk, the file should be complete and the size we expect
@@ -403,7 +501,7 @@ def upload():
                       f" expected {request.form['dztotalfilesize']} ")
             return make_response(('Size mismatch', 500))
         else:
-            print(f'File {file.filename} has been uploaded successfully')
+            ##print(f'File {file.filename} has been uploaded successfully')
             directory_to_extract_to = unzip(save_path)
             uploaded_directory = directory_to_extract_to
             path = uploaded_directory
@@ -411,6 +509,7 @@ def upload():
             if img_path!='none':
                 class_info = check_if_folder_is_valid(path)
                 class_info_dict[file_id] = class_info
+                ##print("class info:",class_info_dict[file_id])
                 for i in valid_image_extensions:
                     if img_path.endswith(i):
                         img_extension = i
@@ -418,7 +517,7 @@ def upload():
             else:
                 dict_with_interactive_image_paths[file_id] = 'none'
             #return img_path
-            print('RETURNING',dict_with_interactive_image_paths[file_id])
+            ##print('RETURNING',dict_with_interactive_image_paths[file_id])
             return make_response(('Upload success', 200))
             
             #unzip zip file here
@@ -432,41 +531,74 @@ def upload():
 
 def random_filename():
     rand_filename = str(uuid.uuid4())+'.zip'
-    print(rand_filename)
+    ##print(rand_filename)
     return rand_filename
 def delete_zip_file(filename):
     os.remove(os.path.join(upload_folder_path,filename))
 
 @app.route('/augment/<dataset_id>',methods=['POST','GET']) 
-def augment(dataset_id):
+def augment(dataset_id):    
+    ##print("class info keys:",class_info_dict.keys())
+    if dataset_id not in class_info_dict:
+        return make_response(('Dataset ID not found', 404))
+
     class_data = class_info_dict[dataset_id]
     augmentation_data = json.loads(request.form['aug_data'])
+
+
     folders = os.listdir(upload_folder_path)
     for folder_name in folders: # 
         if dataset_id in folder_name and '.zip' not in folder_name:
             full_dir_path = os.path.join(upload_folder_path,folder_name)
             output_file_path = os.path.join(upload_folder_path,folder_name)
-
-
-
             # folder to augment is full_dir_path
             #TODO: augment folder here
-            print("augmentation data:",augmentation_data)
+            ##print("augmentation data:",augmentation_data)
+            #augmenting ONLY labled images
+            images_to_augment = getAllLabeledImagePaths(dataset_id)
             for augmentString in augmentation_data: #augmentation data includes both augment data and pre-process data strings
                 if "grayscalePreProcess" == augmentString:
+                
                     print("grayscale pre-processing")
+                    #making every labeled image grayscale
+                    # #print("class data keys:",class_data.keys())
+                    for image in images_to_augment:
+                        image_path = image[0]
+                        image_class = image[1]
+                        img = cv2.imread(image_path)
+                        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                        cv2.imwrite(image_path,gray) 
                 elif "flip" in augmentString:
                     print("flip augmentations:",augmentString.split("-")[1:])
+                    augmentString = augmentString.split("-")
+                    vertically_flipped = augmentString[1] == "true"
+                    horizontally_flipped = augmentString[2] == "true"
+
+
                 elif "90_rotate" in augmentString:
                     print("90_rotate augmentations:",augmentString.split("-")[1:])
+                    augmentString = augmentString.split("-")
+                    clockwiseRotated = augmentString[1] == "true"
+                    counterClockwiseRotated = augmentString[2] == "true"
+                    upsideDownRotated = augmentString[3] == "true"
+
                 elif "rotate" in augmentString:
-                    print("rotate augmentations:",augmentString.split("-")[1:])
+                    print("rotate augmentations:",augmentString.split("-")[1:]) 
+                    augmentString = augmentString.split("-")
+                    degreesRotated = augmentString[1] #degrees rotated ranges from -degreesRotated, to degreesRotated (ex. -5,5)
                 elif "crop" in augmentString:
                     print("crop augmentations",augmentString.split("-")[1:])
+                    augmentString = augmentString.split("-")
+                    min_crop_value = float(augmentString[1])
+                    max_crop_value = float(augmentString[2])
                 elif "blur" in augmentString:
                     print("blur augmentations:",augmentString.split("-")[1:])
+                    augmentString = augmentString.split("-")
+                    blurValue = float(augmentString[1])
                 elif "grayscale" in augmentString:
-                    print("grayscale augmentations:",augmentString.split("-")[1:])
+                    print("grayscale augmentations:",augmentString.split("-")[1:])  
+                    augmentString = augmentString.split("-")
+                    percentOutputtedImagesToGrayscale = float(augmentString[1])
 
 
             shutil.make_archive(full_dir_path,'zip',output_file_path)
@@ -493,8 +625,6 @@ def augment(dataset_id):
 def Classification():
     return render_template('Classification.html')
 
-
-
 @app.route('/Object_detection',methods=['POST','GET'])
 def Object_detection():
     return render_template('Object_detection.html')
@@ -510,14 +640,14 @@ def get_all_preview_images(folder_id,aug):
     folder_path = os.path.join(interactive_images_folder_path,folder_id,aug)
     image_names = os.listdir(folder_path)
     
-    # print("image names:",image_names)
+    # ##print("image names:",image_names)
     images = {}
     for img_name in image_names:
         image_path = os.path.join(folder_path,img_name)
         for ext in valid_image_extensions:
             if img_name.endswith(ext):
                 blur_value = img_name.replace(ext,'')
-                # print(f"{aug} value:",blur_value)
+                # ##print(f"{aug} value:",blur_value)
                 break
         if os.path.exists(image_path):
             with open(image_path, "rb") as image_file:
@@ -537,4 +667,4 @@ def change_all_preview_images(folder_id,pre_proccessing_option):
 
 
 if __name__ == '__main__':
-    app.run(debug=True,host='0.0.0.0',port=5000)#debug=True #host='0.0.0.0', port=5000
+    app.run(debug=True,host='0.0.0.0',port=5001)#debug=True #host='0.0.0.0', port=5000

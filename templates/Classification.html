@@ -43,27 +43,28 @@
         <!-- <b id="visualizationGenerationIndicator" style="display: none;">Visualizations being generated... please wait</b> -->
     </div>
     <div id="dropzone_buttons" style="font-size: 1.5vw;">
+
         <br>
-        <input type="radio" id='zip' name="folder_or_zip" onclick="set_zip_or_folder_upload();"> <label
-            for="zip">zip</label>
+        <input type="radio" id="multi-label" name="multi-label-or-single-label">
+        <label for="multi-label">Multi-label</label>
+        <input type="radio" id="singel-label" name="multi-label-or-single-label" checked>
+        <label for="singel-label">Single-label</label>
+
+        <br>
+        <input type="radio" id='zip' name="folder_or_zip" onclick="set_zip_or_folder_upload();"> <label for="zip">Select
+            zip file</label>
         <input type="radio" id='folder' name="folder_or_zip" checked onclick="set_zip_or_folder_upload();"> <label
-            for="folder">folder</label>
+            for="folder">Select folder</label>
+        <input type="radio" id='files' name="folder_or_zip" onclick="set_zip_or_folder_upload();"> <label
+            for="folder">Select files (not zip files)</label>
         <br>
-        <div id='zip_upload_buttons' style="display: none;">
-            <form method="POST" action='/upload' class="dropzone" id="dropper" enctype="multipart/form-data" style="background-color: aliceblue;text-align: top;overflow: hidden; font-size: 1.5vw;width:20vw; height:20vw;display: flex;
-                justify-content: center; /* Horizontally center */
-                align-items: center; /* Vertically center */">
+        <div id='upload_buttons' style="display: block;">
+            <form method="POST" action='/upload' class="dropzone" id="dropper" enctype="multipart/form-data">
             </form>
             <!-- <b id="visualizationGenerationIndicator" style="display: none;">Visualizations being generated... please wait</b> -->
+            <button onclick="send_dataset();" style="display: none;" id="submitFolder">Submit Dataset</button>
         </div>
 
-        <div id="folder_upload_buttons">
-            <input id="design" type="file" webkitdirectory="true" directory style="display: none;"
-                onchange="send_dataset();" /><br>
-            <input type="button" id="select_folder" value="Select folder..."
-                onclick="document.getElementById('design').click();"
-                style="width: 20vw;height: 4.5vh; font-size: 1.5vw; text-align: center;" />
-        </div>
         <br>
     </div>
     <b id="visualizationGenerationIndicator" style="display: none;">Visualizations being generated... please wait</b>
@@ -236,7 +237,7 @@
                 </div>
                 <div class="item">
                     <img src="" id="crop_sample_img2" />
-                </div> 
+                </div>
             </div>
         </div>
 
@@ -307,7 +308,7 @@
                 <b id="show_blur_limit"></b> px
                 <br>
                 <!-- <div class="images-container"> -->
-                    <!-- <div class="img_div">
+                <!-- <div class="img_div">
                         <img src="" id="blur_normal_sample_image" class="sample_image">
                         <figcaption id=sample_limit_caption">0 px</figcaption>
                     </div>
@@ -317,14 +318,14 @@
                         <figcaption id="blur_limit_caption">5</figcaption>
                     </div> -->
 
-                    <div class="item">
-                        <img src="" id="blur_normal_sample_image" />
-                        <span class="caption" id="sample_limit_caption">0 px</span>
-                    </div>
-                    <div class="item">
-                        <img src="" id="blur_sample_image" />
-                        <span class="caption" id="blur_limit_caption">5</span>
-                    </div>
+                <div class="item">
+                    <img src="" id="blur_normal_sample_image" />
+                    <span class="caption" id="sample_limit_caption">0 px</span>
+                </div>
+                <div class="item">
+                    <img src="" id="blur_sample_image" />
+                    <span class="caption" id="blur_limit_caption">5</span>
+                </div>
 
                 <!-- </div> -->
                 <!-- <br><br><br><br><br> -->

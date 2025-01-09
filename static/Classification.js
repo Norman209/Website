@@ -2,6 +2,18 @@
 
 let originalImageWidth;
 let originalImageHeight;
+
+let totalChunks = 0;
+let sentChunks = 0;
+let sentFiles = 0;
+let totalFiles = 0;
+let sentBatches = 0;
+let completedFiles = 0;
+let batchSize = 20; 
+
+let uploadOption = "folder"; //default upload option
+
+
 let image_ids = ['blur_sample_image', 'blur_normal_sample_image', 'rotate_normal_sample_image', 'rotate_sample_image', 'rotate_sample_image2', 'grayscale_sample_image', 'clockwise_sample_img', 'counter_clockwise_sample_img', 'upside_down_sample_img', 'vertical_flip_sample_img', 'horizontal_flip_sample_img', 'crop_sample_img', 'crop_sample_img2']
 
 let folder_id = "id" + Math.random().toString(16).slice(2);
@@ -13,6 +25,271 @@ window.onload = function () {
     // Your code here
 
 };
+function endsWith(str, suffix) {
+    return str.indexOf(suffix, str.length - suffix.length) !== -1;
+}
+function setToDefault() {
+    totalChunks = 0;
+    sentChunks = 0;
+    sentFiles = 0;
+    totalFiles = 0;
+    sentBatches = 0;
+    completedFiles = 0;
+    batchSize = 20;    
+};
+
+Dropzone.options.dropper = {
+    paramName: 'file',
+    autoDiscover: true,
+    timeout: 1.8e+6,//30 minute timeout
+    // autoProcessQueue:true,
+    // parallelUploads: 20,
+    // uploadMultiple:true,
+    init: function () {
+        if (uploadOption == "folder") {
+            this.options.autoProcessQueue = false;
+            this.hiddenFileInput.setAttribute("webkitdirectory", true);
+            this.options.chunking = false;
+            this.options.url = "/uploadMultiple"
+            this.options.forceChunking = false;
+            this.options.uploadMultiple = true;
+            this.acceptedFiles = null;
+            this.maxFiles = null;
+            this.options.parallelUploads = 20;
+        }
+        else {
+            this.options.chunking = true;
+            this.options.forceChunking = false;
+            this.options.uploadMultiple = true;
+            this.acceptedFiles = ".zip"
+            this.hiddenFileInput.setAttribute("webkitdirectory", false);
+            this.maxFiles = 1;
+            this.options.autoProcessQueue = true;
+            this.options.url = "/uploadZip"
+            this.options.parallelUploads = null;
+
+        }
+        this.updateDropzoneOptions = function(newOptions) {
+            for (let option in newOptions) {
+                if (newOptions.hasOwnProperty(option)) {
+                    this.options[option] = newOptions[option];
+                }
+            }
+        }
+
+        // Example of changing totalChunks from outside the Dropzone initialization
+
+        // setToDefault();
+
+
+
+
+        this.on("addedfile", function (file) {
+            // console.log("filename:", file.name);
+            totalFiles = this.files.length;
+
+
+            if (uploadOption == "zip" && endsWith(file.name, '.zip')) {
+                document.getElementById('augmentation').style.opacity = '25%';
+                document.getElementById('Pre-Proccessing').style.opacity = '25%';
+                this.options.autoProcessQueue = true;
+            }
+            if (uploadOption == "folder") {
+                document.getElementById("submitFolder").style.display = "block";
+            }
+            // Calculate total chunks when a file is added
+            totalChunks = Math.ceil(file.size / this.options.chunkSize);
+            sentChunks = 0; // Reset counter for the new file
+            // console.log(`Total chunks to send: ${totalChunks}`);
+        });
+        this.on("queuecomplete", async function () {
+            if (uploadOption == "zip") {
+                console.log("COMPLETED!")
+                console.log('file id:', folder_id);
+                let data1 = 'test';
+                //wait for upload to finish, then enable inputs (augmentation options)
+                while (data1 !== 'none' && !(data1.includes('.'))) {
+                    console.log('checking if finished...')
+                    await fetch('/check_finished/' + folder_id).then(response => {
+                        const contentType = response.headers.get("content-type");
+                        if (contentType && contentType.indexOf("application/json") == -1) {
+                            return response.text().then(text => {
+                                console.log('response:', text)
+                                this.removeAllFiles(true);
+
+                                this.options.chunking = true;
+                                this.options.forceChunking = false;
+                                this.options.uploadMultiple = false;
+                                this.options.acceptedFiles = null;
+                                this.options.maxFiles = null;
+                                this.hiddenFileInput.setAttribute("webkitdirectory", true);
+                                // this.options.autoProcessQueue = false;
+                                data1 = text;
+                            });
+                        }
+                    });
+                }
+                if (data1 === 'none') {
+                    document.getElementById("visualizationGenerationIndicator").style.display = "none";
+
+                    console.log('no images found. invalid dataset')
+                    document.getElementById("submitFolder").style.display = 'none';
+                    this.removeAllFiles(true);
+
+
+                    alert('dataset invalid or no images found')
+                    folder_id = "id" + Math.random().toString(16).slice(2);
+
+                }
+                else {
+                    document.getElementById("visualizationGenerationIndicator").style.display = "none";
+                    console.log('dataset uploaded successfully, valid')
+                    sample_image_extension = data1;
+
+                    enable_inputs();
+                    document.getElementById('dropzone_buttons').style.display = 'none';
+                    //document.getElementById('test_image').src = data1
+                }
+                setToDefault();
+            }
+
+        });
+        this.on("sending", function (file, xhr, formData) {
+            if (uploadOption == "zip") {
+                document.getElementById("submitFolder").style.display = "none";
+                formData.append('id', folder_id);
+                sentChunks++;
+                const remainingChunks = totalChunks - sentChunks;
+                console.log(`Sent chunk ${sentChunks}/${totalChunks}. Remaining chunks: ${remainingChunks}`);
+                if (remainingChunks == 0) {
+                    console.log("0 remaining chunks")
+                    document.getElementById("visualizationGenerationIndicator").style.display = "block";
+                    // formData.append()
+                }
+                // Add parameters to be sent with every chunk request
+
+                console.log("folder_id:", folder_id)
+                console.log('sent chunk')
+            }
+        });
+        this.on("sendingmultiple", function (files, xhr, formData) {
+            if (uploadOption == "folder") {
+                this.options.autoProcessQueue = true;
+                sentBatches += 1;
+                console.log(`Sending batch ${sentBatches}, Files: ${files.length}`);
+                console.log("All files:", this.files);
+                console.log("Queued files:", this.getQueuedFiles());
+                formData.append('id', folder_id);
+
+
+                // Append each file's relative path to the formData
+                files.forEach(function(file, index) {
+                    console.log("file path:", file.webkitRelativePath || file.name);
+                    formData.append(`file_path_${index}`, file.webkitRelativePath || file.name);
+                });
+
+
+                // Check if the batch contains the last file(s)
+                const isLastBatch = (sentBatches * batchSize >= totalFiles);
+                console.log("last batch:", isLastBatch)
+                if (isLastBatch == false) {
+                    formData.append("last upload", 'false');
+                }
+                if (isLastBatch == true) {
+                    formData.append("last upload", 'true');
+                }
+
+                if (isLastBatch) {
+                    console.log("Last batch detected during sending.");
+                }
+            }
+        });
+
+        // Monitor when files finish uploading
+        this.on("completemultiple", async function (files) {
+            if (uploadOption == "folder") {
+                completedFiles += files.length;
+                console.log(`Batch upload complete. Total completed files: ${completedFiles}/${totalFiles}`);
+
+
+                // Check if all files are done
+                if (completedFiles === totalFiles) {
+                    document.getElementById("submitFolder").style.display = "none";
+                    console.log("All files uploaded successfully.");
+                    // Perform post-upload tasks here
+                    document.getElementById("visualizationGenerationIndicator").style.display = "none";
+                    console.log("COMPLETED!")
+                    console.log('file id:', folder_id);
+                    let data1 = 'test';
+                    //wait for upload to finish, then enable inputs (augmentation options)
+                    while (data1 !== 'none' && !(data1.includes('.'))) {
+                        console.log('checking if finished...')
+                        await fetch('/check_finished/' + folder_id).then(response => {
+                            const contentType = response.headers.get("content-type");
+                            if (contentType && contentType.indexOf("application/json") == -1) {
+                                return response.text().then(text => {
+                                    console.log('response:', text)
+                                    this.removeAllFiles(true);
+                                    // this.options.autoProcessQueue = false;
+                                    data1 = text;
+                                });
+                            }
+                        });
+                    }
+                    if (data1 === 'none') {
+                        document.getElementById("visualizationGenerationIndicator").style.display = "none";
+                        console.log('no images found. invalid dataset')
+                        this.removeAllFiles(true);
+
+
+                        this.options.chunking = true;
+                        this.options.forceChunking = false;
+                        this.options.uploadMultiple = false;
+                        this.options.acceptedFiles = null;
+                        this.options.maxFiles = null;
+                        this.options.autoProcessQueue = false;
+                        alert('dataset invalid or no images found')
+                        folder_id = "id" + Math.random().toString(16).slice(2);
+
+                    }
+                    else {
+                        this.hiddenFileInput.setAttribute("webkitdirectory", true);
+                        document.getElementById("visualizationGenerationIndicator").style.display = "none";
+                        console.log('dataset uploaded successfully, valid')
+                        sample_image_extension = data1;
+
+                        enable_inputs();
+                        document.getElementById('dropzone_buttons').style.display = 'none';
+                        //document.getElementById('test_image').src = data1
+                    }
+                    setToDefault();
+                }
+            }
+        });
+
+    },
+
+
+    maxFilesize: 100 * 1e+3, // MB (100 gb) 
+    chunkSize: (1e+7), // bytes
+    // acceptedFiles: '.zip',
+    // maxFiles: NA,
+    // parallelUploads: 1,
+    maxfilesexceeded: function (file) {
+        this.removeAllFiles();
+        this.addFile(file);
+    }
+}
+// // Example of calling updateDropzoneOptions from outside the Dropzone initialization
+// function changeDropzoneOptions() {
+//     var myDropzone = Dropzone.forElement("#dropper");
+//     if (myDropzone) {
+//         myDropzone.updateDropzoneOptions({ autoProcessQueue: false, parallelUploads: 10 })
+//     }
+// }
+// const dropzoneElement = document.getElementById('dropper');
+// new Dropzone(dropzoneElement, Dropzone.options.dropper);
+
 
 
 class range_input_scripts {
@@ -82,25 +359,37 @@ function grayscale_preview_images() {
 }
 function send_dataset() {
     console.log('sending')
+    document.getElementById("submitFolder").style.display = "none";
+    // document.getElementById("zip").style.display = "none";
+    // document.getElementById("folder").style.display = "none";
+    // document.getElementById("files").style.display = "none";
     //TODO: only do this if there is a zip file in dropzone
-    if (default_upload_option === 'zip') {
-        var dropzone = Dropzone.forElement('#dropper');
-        if (dropzone.getQueuedFiles().length > 0) {
-            document.getElementById('augmentation').style.opacity = '25%';
-            document.getElementById('Pre-Proccessing').style.opacity = '25%';
-            dropzone.processQueue();
-        }
-    }
+    // Dropzone.options.autoProcessQueue = true;
+    var myDropzone = Dropzone.forElement("#dropper");
 
-    else {
-        if (document.getElementById('design').files.length > 0) {
-            console.log('sending folder')
-            document.getElementById('upload_progress').style.display = 'block';
-            document.getElementById('dropzone_buttons').style.display = 'none';
-            upload_folder();
-        }
+    let count = myDropzone.files.length
+    console.log("file count:", count)
+    if (count > 0) {
+        document.getElementById('augmentation').style.opacity = '25%';
+        document.getElementById('Pre-Proccessing').style.opacity = '25%';
+        // Set autoQueue to true
+        // myDropzone.options.autoQueue = true;
+
+        // Verify the setting
+        console.log("autoQueue is now:", myDropzone.options.autoQueue);
+        myDropzone.processQueue();
     }
 }
+
+// else {
+//     if (document.getElementById('design').files.length > 0) {
+//         console.log('sending folder')
+//         document.getElementById('upload_progress').style.display = 'block';
+//         document.getElementById('dropzone_buttons').style.display = 'none';
+//         upload_folder();
+//     }
+// }
+
 function check_if_image(data) {
     let valid_extensions = ['.png', '.jpg', '.jpeg', '.tiff', '.bmp']
     for (i = 0; i < valid_extensions.length; i++) {
@@ -120,31 +409,33 @@ function resize_preview_images() {
         console.log("selected Height:", selectedHeight)
         let aspectRatio = selectedWidth / selectedHeight;
         document.getElementById("resize_preprocess_pop_up").style.display = "block";
-        let imageMaxHeight = document.getElementById("resizeItem").getBoundingClientRect().height
-        let imageMaxWidth = document.getElementById("resizeItem").getBoundingClientRect().width
+        let imageMaxHeight = originalImageHeight//document.getElementById("resize_sample_img").getBoundingClientRect().height
+        let imageMaxWidth = originalImageWidth//document.getElementById("resize_sample_img").getBoundingClientRect().width
         for (i = 0; i < items.length; i++) {
             // images[i].style.filter = 'grayscale(100%)'
-
+            items[i].style.aspectRatio = 1;
             // items[i].style.aspectRatio = aspectRatio;
+            document.getElementById(images[i].id).style.aspectRatio = aspectRatio
             if ((selectedHeight > imageMaxHeight) || (selectedWidth > imageMaxWidth)) {
+
                 if (aspectRatio > 1) {
                     console.log("aspect ratio greater than 1")
-                    document.getElementById(images[i].id).style.height = imageMaxHeight/aspectRatio + "px"
+                    // document.getElementById(images[i].id).style.height = imageMaxHeight / aspectRatio + "px"
                     document.getElementById(images[i].id).style.width = imageMaxWidth + "px"
                 }
                 else if (aspectRatio < 1) {
                     console.log("aspect ratio less than 1")
-                    document.getElementById(images[i].id).style.height = imageMaxHeight + "px"
-                    document.getElementById(images[i].id).style.width = imageMaxWidth*aspectRatio + "px"
+                    // document.getElementById(images[i].id).style.height = imageMaxHeight + "px"
+                    document.getElementById(images[i].id).style.width = imageMaxWidth * aspectRatio + "px"
                 }
-                if(aspectRatio==1){
+                if (aspectRatio == 1) {
                     console.log("aspect ratio is 1")
-                    document.getElementById(images[i].id).style.height = imageMaxHeight + "px"
+                    // document.getElementById(images[i].id).style.height = imageMaxHeight + "px"
                     document.getElementById(images[i].id).style.width = imageMaxWidth + "px"
                 }
             }
             else {
-                document.getElementById(images[i].id).style.height = selectedHeight + "px"
+                // document.getElementById(images[i].id).style.height = selectedHeight + "px"
                 document.getElementById(images[i].id).style.width = selectedWidth + "px"
             }
 
@@ -159,14 +450,14 @@ function resize_preview_images() {
             // items[i].style.aspectRatio = originalImageWidth/originalImageHeight //making the width 30% of the UI
             // document.getElementById(images[i].id).style.aspectRatio = originalImageWidth/originalImageHeight
 
-            document.getElementById(images[i].id).style.height = originalImageHeight + "px"
+            document.getElementById(images[i].id).style.aspectRatio = originalImageWidth / originalImageHeight
             document.getElementById(images[i].id).style.width = originalImageWidth + "px"
             // document.getElementById(images[i].id).style.height = heightToWidthRatio*widthToHeightRatio*.3*width+"px" 
 
         }
         document.getElementById("resize_preprocess_pop_up").style.display = "none";
     }
-
+    window.addEventListener("resize", resize_preview_images)
 }
 async function submit_everything() {
     alert("Augmenting uploaded dataset now...");
@@ -190,7 +481,7 @@ async function submit_everything() {
         }
     });
     document.getElementById('download_tag').innerText = 'click here to download augmented dataset';
-    document.getElementById('download_tag').href = '/download/' + folder_id;
+    document.getElementById('download_tag').href = '/download/' + folder_id + '/' + uploadOption;
 }
 
 async function change_all_preview_images(pre_proccessing_option) { //this function changes the preview images based on chosen pre-proccessing options
@@ -217,6 +508,7 @@ async function change_all_preview_images(pre_proccessing_option) { //this functi
 
 
 function close_download_tag() {
+    // location.reload();
     let download_href = document.getElementById('download_tag');
     download_href.innerText = ''
     folder_id = "id" + Math.random().toString(16).slice(2);
@@ -224,28 +516,100 @@ function close_download_tag() {
     document.getElementById('dropzone_buttons').style.display = 'block';
     document.getElementById('augmentation').style.opacity = '25%';
     document.getElementById('Pre-Proccessing').style.opacity = '25%';
+    set_zip_or_folder_upload();
+
 }
 
 function set_zip_or_folder_upload() {
+    setToDefault();
+
     folder_id = "id" + Math.random().toString(16).slice(2);
     console.log("folder id:", folder_id)
-    var dropzoneElement = document.getElementById('dropper');
+    // var dropzoneElement = document.getElementById('dropper');
+    // dropzoneElement.removeAllFiles(true)
     Dropzone.forElement('#dropper').removeAllFiles(true);
+    document.getElementById("submitFolder").style.display = "none";
     let zip_option = document.getElementById('zip');
     let folder_option = document.getElementById("folder");
+    // resetDropZone();
+    let files_option = document.getElementById("files");
+    const myDropzone = Dropzone.instances.find(instance => instance.element.id === 'dropper');
     if (zip_option.checked) {
-        document.getElementById('design').value = null;
+        uploadOption = "zip"
+        // let myDropzone = Dropzone.forElement("#dropper"); // Assumes a single Dropzone instance
+       
         console.log('doing zip uploads');
         default_upload_option = 'zip'
-        document.getElementById('folder_upload_buttons').style.display = 'none';
-        document.getElementById('zip_upload_buttons').style.display = 'block';
+        document.getElementById('upload_buttons').style.display = 'block';
+
+        Dropzone.forElement("#dropper").updateDropzoneOptions({ autoProcessQueue: true, parallelUploads: 20, chunking: true, forceChunking: true, uploadMultiple: false, acceptedFiles: ".zip", maxFiles: 1 });
+        // Access the hidden file input
+        const hiddenInput = myDropzone.hiddenFileInput;
+
+        // Set the webkitdirectory attribute
+        hiddenInput.removeAttribute("webkitdirectory");
+        myDropzone.options.acceptedFiles = ".zip"
+        myDropzone.hiddenFileInput.setAttribute("accept", ".zip");
+        myDropzone.options.chunking = true;
+        myDropzone.options.forceChunking = true;
+        myDropzone.options.uploadMultiple = false;
+        // this.acceptedFiles = ".zip"
+        // this.hiddenFileInput.setAttribute("webkitdirectory", false);
+        myDropzone.options.maxFiles = 1;
+        myDropzone.options.parallelUploads = 20;
+        myDropzone.options.autoProcessQueue = true;
+        myDropzone.options.url = "/uploadZip"
+
+        // Dropzone.options.dropper.acceptedFiles = '.zip'
+        console.log("accepted files:", Dropzone.options.dropper.acceptedFiles)
     }
     if (folder_option.checked) {
-        document.getElementById('design').value = null;
+        uploadOption = "folder"
+        const dropzoneElement = Dropzone.instances[0]; // Assumes a single Dropzone instance
         console.log('doing folder uploads');
         default_upload_option = 'folder'
-        document.getElementById('folder_upload_buttons').style.display = 'block';
-        document.getElementById('zip_upload_buttons').style.display = 'none';
+        Dropzone.forElement("#dropper").updateDropzoneOptions({ autoProcessQueue: false, parallelUploads: 20,chunking:false,forceChunking:false,uploadMultiple:true,acceptedFiles:null,maxFiles:null,url:"/uploadMultiple" });  
+        myDropzone.options.autoProcessQueue = false;
+        // myDropzone.hiddenFileInput.setAttribute("webkitdirectory", true);
+        myDropzone.options.chunking = false;
+        myDropzone.options.url = "/uploadMultiple"
+        myDropzone.options.forceChunking = false;
+        myDropzone.options.uploadMultiple = true;
+        myDropzone.acceptedFiles = null;
+        myDropzone.maxFiles = null;
+        myDropzone.options.parallelUploads = 20;
+
+
+        // Access the hidden file input
+        const hiddenInput = dropzoneElement.hiddenFileInput;
+
+        // Set the webkitdirectory attribute
+        hiddenInput.setAttribute("webkitdirectory", true);
+
+    }
+    if (files_option.checked) {
+        uploadOption = "folder"
+        let myDropzone = Dropzone.forElement("#dropper"); // Assumes a single Dropzone instance
+        myDropzone.hiddenFileInput.removeAttribute("accept", ".zip");
+        const dropzoneElement = Dropzone.instances[0]; // Assumes a single Dropzone instance
+        myDropzone.options.autoProcessQueue = false;
+        // myDropzone.hiddenFileInput.setAttribute("webkitdirectory", true);
+        myDropzone.options.chunking = false;
+        Dropzone.forElement("#dropper").updateDropzoneOptions({ autoProcessQueue: false, parallelUploads: 20,chunking:false,forceChunking:false,uploadMultiple:true,acceptedFiles:null,maxFiles:null,url:"/uploadMultiple" });
+        myDropzone.options.parallelUploads = 20;
+        myDropzone.options.url = "/uploadMultiple"
+        myDropzone.options.forceChunking = false;
+        myDropzone.options.uploadMultiple = true;
+        myDropzone.acceptedFiles = null;
+        myDropzone.maxFiles = null;
+        myDropzone.options.parallelUploads = 20;
+        // Access the hidden file input
+        const hiddenInput = dropzoneElement.hiddenFileInput;
+        // myDropzone.hiddenFileInput.setAttribute("", ".zip");
+        // Set the webkitdirectory attribute
+        hiddenInput.removeAttribute("webkitdirectory");
+        Dropzone.options.dropper.acceptedFiles = null
+
     }
 }
 
@@ -258,7 +622,7 @@ $("#slider-range").slider({
 
 
 async function upload_folder() {
-    document.getElementById('select_folder').style.display = 'none';
+    // document.getElementById('select_folder').style.display = 'none';
     let files = await document.getElementById('design').files
     let batch_size = 10;
     let chunks = chunkDictionary(files, batch_size)
@@ -336,16 +700,16 @@ async function upload_folder() {
         alert('no images found in dataset')
         document.getElementById('dropzone_buttons').style.display = 'block';
         document.getElementById('upload_progress').style.display = 'none';
-        document.getElementById('zip_upload_buttons').style.display = 'block';
+        document.getElementById('upload_buttons').style.display = 'block';
 
-        document.getElementById('select_folder').style.display = 'block';
+        // document.getElementById('select_folder').style.display = 'block';
         set_zip_or_folder_upload();
     }
 }
 
 function collect_aug_data() {
     aug_list = [];
-    augs_checkboxes = ['Flip_check_box', 'blur_checkbox', "90° rotate_check_box", 'Crop_checkbox', 'Rotate_checkbox', 'blur_checkbox']
+    augs_checkboxes = ['Flip_check_box', 'blur_checkbox', "90° rotate_check_box", 'Crop_checkbox', 'Rotate_checkbox', 'blur_checkbox','resize_preprocess']
     let flip_checked = document.getElementById('Flip_check_box').checked;//check if blur is checked or not
     let rotation_90_checked = document.getElementById("90° rotate_check_box").checked;
     let crop_checked = document.getElementById('Crop_checkbox').checked;
@@ -361,7 +725,8 @@ function collect_aug_data() {
     }
     if (flip_checked) {
         vertically_flipped = document.getElementById('vertical_flip').checked;
-        horizontally_flipped = document.getElementById('horizontal_flip').checked;
+        
+         document.getElementById('horizontal_flip').checked;
         aug_list.push('flip' + "-" + vertically_flipped + "-" + horizontally_flipped) //items in order: vertically flipped, horizontally flipped, vertical prob, horizontal prob
     }
     if (rotation_90_checked) {
@@ -393,7 +758,7 @@ function collect_aug_data() {
     //TODO: return form data instead of list
     return JSON.stringify(aug_list);
 }
-pop_up_ids = ['rotate_pop_up', 'blur_pop_up', 'Flip_pop_up', '90_rotate_popup', 'crop_pop_up', 'grayscale_popup']
+pop_up_ids = ['resize_preprocess_pop_up','rotate_pop_up', 'blur_pop_up', 'Flip_pop_up', '90_rotate_popup', 'crop_pop_up', 'grayscale_popup']
 //blur_click_checkbox  flip_click_checkbox verticalflip_click_checkbox horizontalflip_click_checkbox rotate_90_click_checkbox crop_click_checkbox
 class display_popups {
     rotate_click_checkbox() {
@@ -545,11 +910,23 @@ class display_popups {
 }
 let display_popups_methods = new display_popups();
 
+function uncheck_all_checkboxes() {
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+
+    checkboxes.forEach((checkbox) => {
+      checkbox.checked = false;
+    });
+}
+
+
+
+
 function reset_inputs() {
-    for (i = 0; i < input_ids.length; i++) {
-        // input_ids[i].disabled = true;
-        document.getElementById(input_ids[i]).checked = false;
-    }
+    // for (i = 0; i < input_ids.length; i++) {
+    //     // input_ids[i].disabled = true;
+    //     document.getElementById(input_ids[i]).checked = false;
+    // }
+    uncheck_all_checkboxes();
     for (i = 0; i < pop_up_ids.length; i++) {
         let popup_id = pop_up_ids[i];
         document.getElementById(popup_id).style.display = 'none';
@@ -564,7 +941,7 @@ function disable_inputs() {
         input.disabled = true;
         document.getElementById('augmentation').style.opacity = '25%';
         document.getElementById('Pre-Proccessing').style.opacity = '25%';
-        document.getElementById('select_folder').style.display = 'block';
+        // document.getElementById('select_folder').style.display = 'block';
     }
 }
 
@@ -767,83 +1144,5 @@ async function enable_inputs() {
 
 
 
-    Dropzone.options.dropper = {
-        paramName: 'file',
-        autoProcessQueue: true,
-        chunking: true,
-        forceChunking: true,
-        url: '/upload',
-        autoDiscover: true,
-        timeout: 1.8e+6,//30 minute timeout
-        init: function () {
-            // this.hiddenFileInput.setAttribute("webkitdirectory", true);
-            let totalChunks = 0; // Total number of chunks for the current file
-            let sentChunks = 0;  // Track how many chunks have been sent
-
-            this.on("addedfile", function (file) {
-                // Calculate total chunks when a file is added
-                totalChunks = Math.ceil(file.size / this.options.chunkSize);
-                sentChunks = 0; // Reset counter for the new file
-                console.log(`Total chunks to send: ${totalChunks}`);
-            });
-            this.on("queuecomplete", async function () {
-                this.removeAllFiles(true);
-                console.log('file id:', folder_id);
-                let data1 = 'test';
-                //wait for upload to finish, then enable inputs (augmentation options)
-                while (data1 !== 'none' && !(data1.includes('.'))) {
-                    console.log('checking if finished...')
-                    await fetch('/check_finished/' + folder_id).then(response => {
-                        const contentType = response.headers.get("content-type");
-                        if (contentType && contentType.indexOf("application/json") == -1) {
-                            return response.text().then(text => {
-                                console.log('response:', text)
-                                data1 = text;
-                            });
-                        }
-                    });
-                }
-                if (data1 === 'none') {
-                    document.getElementById("visualizationGenerationIndicator").style.display = "none";
-                    console.log('no images found. invalid dataset')
-
-                    alert('dataset invalid or no images found')
-                    folder_id = "id" + Math.random().toString(16).slice(2);
-
-                }
-                else {
-                    document.getElementById("visualizationGenerationIndicator").style.display = "none";
-                    console.log('dataset uploaded successfully, valid')
-                    sample_image_extension = data1;
-                    enable_inputs();
-                    document.getElementById('dropzone_buttons').style.display = 'none';
-                    //document.getElementById('test_image').src = data1
-                }
-
-            });
-            this.on("sending", function (file, xhr, formData) {
-                sentChunks++;
-                const remainingChunks = totalChunks - sentChunks;
-                console.log(`Sent chunk ${sentChunks}/${totalChunks}. Remaining chunks: ${remainingChunks}`);
-                if (remainingChunks == 0) {
-                    console.log("0 remaining chunks")
-                    document.getElementById("visualizationGenerationIndicator").style.display = "block";
-                }
-                // Add parameters to be sent with every chunk request
-                formData.append('id', folder_id);
-                console.log('sent chunk')
-            });
-        },
-
-        maxFilesize: 100 * 1e+3, // MB (100 gb) 
-        chunkSize: (1e+7), // bytes
-        acceptedFiles: '.zip',
-        maxFiles: 1,
-        parallelUploads: 1,
-        maxfilesexceeded: function (file) {
-            this.removeAllFiles();
-            this.addFile(file);
-        }
-    }
 
 }

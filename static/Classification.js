@@ -9,7 +9,7 @@ let sentFiles = 0;
 let totalFiles = 0;
 let sentBatches = 0;
 let completedFiles = 0;
-let batchSize = 20; 
+let batchSize = 20;
 
 let uploadOption = "folder"; //default upload option
 
@@ -35,7 +35,7 @@ function setToDefault() {
     totalFiles = 0;
     sentBatches = 0;
     completedFiles = 0;
-    batchSize = 20;    
+    batchSize = 20;
 };
 
 Dropzone.options.dropper = {
@@ -69,7 +69,7 @@ Dropzone.options.dropper = {
             this.options.parallelUploads = null;
 
         }
-        this.updateDropzoneOptions = function(newOptions) {
+        this.updateDropzoneOptions = function (newOptions) {
             for (let option in newOptions) {
                 if (newOptions.hasOwnProperty(option)) {
                     this.options[option] = newOptions[option];
@@ -183,7 +183,7 @@ Dropzone.options.dropper = {
 
 
                 // Append each file's relative path to the formData
-                files.forEach(function(file, index) {
+                files.forEach(function (file, index) {
                     console.log("file path:", file.webkitRelativePath || file.name);
                     formData.append(`file_path_${index}`, file.webkitRelativePath || file.name);
                 });
@@ -537,7 +537,7 @@ function set_zip_or_folder_upload() {
     if (zip_option.checked) {
         uploadOption = "zip"
         // let myDropzone = Dropzone.forElement("#dropper"); // Assumes a single Dropzone instance
-       
+
         console.log('doing zip uploads');
         default_upload_option = 'zip'
         document.getElementById('upload_buttons').style.display = 'block';
@@ -568,7 +568,7 @@ function set_zip_or_folder_upload() {
         const dropzoneElement = Dropzone.instances[0]; // Assumes a single Dropzone instance
         console.log('doing folder uploads');
         default_upload_option = 'folder'
-        Dropzone.forElement("#dropper").updateDropzoneOptions({ autoProcessQueue: false, parallelUploads: 20,chunking:false,forceChunking:false,uploadMultiple:true,acceptedFiles:null,maxFiles:null,url:"/uploadMultiple" });  
+        Dropzone.forElement("#dropper").updateDropzoneOptions({ autoProcessQueue: false, parallelUploads: 20, chunking: false, forceChunking: false, uploadMultiple: true, acceptedFiles: null, maxFiles: null, url: "/uploadMultiple" });
         myDropzone.options.autoProcessQueue = false;
         // myDropzone.hiddenFileInput.setAttribute("webkitdirectory", true);
         myDropzone.options.chunking = false;
@@ -595,7 +595,7 @@ function set_zip_or_folder_upload() {
         myDropzone.options.autoProcessQueue = false;
         // myDropzone.hiddenFileInput.setAttribute("webkitdirectory", true);
         myDropzone.options.chunking = false;
-        Dropzone.forElement("#dropper").updateDropzoneOptions({ autoProcessQueue: false, parallelUploads: 20,chunking:false,forceChunking:false,uploadMultiple:true,acceptedFiles:null,maxFiles:null,url:"/uploadMultiple" });
+        Dropzone.forElement("#dropper").updateDropzoneOptions({ autoProcessQueue: false, parallelUploads: 20, chunking: false, forceChunking: false, uploadMultiple: true, acceptedFiles: null, maxFiles: null, url: "/uploadMultiple" });
         myDropzone.options.parallelUploads = 20;
         myDropzone.options.url = "/uploadMultiple"
         myDropzone.options.forceChunking = false;
@@ -707,9 +707,70 @@ async function upload_folder() {
     }
 }
 
+
+
+// Function to fetch directories with images
+async function fetchImageDirectories(folderId) {
+    try {
+        // Make the GET request
+        const response = await fetch(`/get_all_paths_with_images/${folderId}`);
+        
+        // Check if the response is successful
+        if (!response.ok) {
+            throw new Error(`Error: ${response.status} - ${response.statusText}`);
+        }
+        
+        // Parse the JSON response
+        const imageDirectories = await response.json();
+        
+        // Log or process the directories
+        console.log("Directories with images:", imageDirectories);
+        
+        // Example: Render the directories as checkboxes
+        const checkboxContainer = document.getElementById('image-directory-checkboxes');
+        checkboxContainer.innerHTML = ''; // Clear existing checkboxes
+        imageDirectories.forEach(directory => {
+            // Create a label and checkbox
+            const label = document.createElement('label');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = directory;
+            checkbox.name = 'directories';
+            checkbox.onclick = function() {
+            // Collect selected directories
+            const selectedDirectories = Array.from(document.querySelectorAll('input[name="directories"]:checked')).map(checkbox => checkbox.value);
+            console.log("Selected directories:", selectedDirectories);
+            }
+            
+            // Add text to label and append checkbox
+            label.appendChild(checkbox);
+            label.appendChild(document.createTextNode(directory));
+            label.style.display = 'block'; // Display each checkbox on a new line
+            
+            // Append to container
+            checkboxContainer.appendChild(label);
+        });
+    } catch (error) {
+        console.error("Failed to fetch image directories:", error);
+    }
+}
+// document.getElementById('directory-form').addEventListener('onchange', event => {
+//     event.preventDefault(); // Prevent the default form submission
+
+//     // Collect selected directories
+//     const selectedDirectories = Array.from(
+//         document.querySelectorAll('input[name="directories"]:checked')
+//     ).map(checkbox => checkbox.value);
+
+//     console.log("Selected directories:", selectedDirectories);
+
+//     // Perform further actions with the selected directories, like sending them to the server
+// });
+
+
 function collect_aug_data() {
     aug_list = [];
-    augs_checkboxes = ['Flip_check_box', 'blur_checkbox', "90° rotate_check_box", 'Crop_checkbox', 'Rotate_checkbox', 'blur_checkbox','resize_preprocess']
+    augs_checkboxes = ['Flip_check_box', 'blur_checkbox', "90° rotate_check_box", 'Crop_checkbox', 'Rotate_checkbox', 'blur_checkbox', 'resize_preprocess']
     let flip_checked = document.getElementById('Flip_check_box').checked;//check if blur is checked or not
     let rotation_90_checked = document.getElementById("90° rotate_check_box").checked;
     let crop_checked = document.getElementById('Crop_checkbox').checked;
@@ -725,8 +786,8 @@ function collect_aug_data() {
     }
     if (flip_checked) {
         vertically_flipped = document.getElementById('vertical_flip').checked;
-        
-         document.getElementById('horizontal_flip').checked;
+
+        horizontally_flipped = document.getElementById('horizontal_flip').checked;
         aug_list.push('flip' + "-" + vertically_flipped + "-" + horizontally_flipped) //items in order: vertically flipped, horizontally flipped, vertical prob, horizontal prob
     }
     if (rotation_90_checked) {
@@ -754,11 +815,16 @@ function collect_aug_data() {
         let percentOutputtedImagesToGrayscale = document.getElementById("blur_limit").value
         aug_list.push('grayscale' + "-" + percentOutputtedImagesToGrayscale);
     }
-
+    augmentation_scale_factor = document.getElementById('Expansion').value;
+    augmentation_scale_factor = augmentation_scale_factor.substring(0, augmentation_scale_factor.length - 1);
+    console.log("augmentation scale factor:", augmentation_scale_factor)
+    aug_list.push('scale' + "-" + augmentation_scale_factor);
+    const selectedDirectories = Array.from(document.querySelectorAll('input[name="directories"]:checked')).map(checkbox => checkbox.value);
+    aug_list.push('directories:'+ selectedDirectories); //directories user has chosen to augment
     //TODO: return form data instead of list
     return JSON.stringify(aug_list);
 }
-pop_up_ids = ['resize_preprocess_pop_up','rotate_pop_up', 'blur_pop_up', 'Flip_pop_up', '90_rotate_popup', 'crop_pop_up', 'grayscale_popup']
+pop_up_ids = ['resize_preprocess_pop_up', 'rotate_pop_up', 'blur_pop_up', 'Flip_pop_up', '90_rotate_popup', 'crop_pop_up', 'grayscale_popup']
 //blur_click_checkbox  flip_click_checkbox verticalflip_click_checkbox horizontalflip_click_checkbox rotate_90_click_checkbox crop_click_checkbox
 class display_popups {
     rotate_click_checkbox() {
@@ -914,7 +980,7 @@ function uncheck_all_checkboxes() {
     const checkboxes = document.querySelectorAll('input[type="checkbox"]');
 
     checkboxes.forEach((checkbox) => {
-      checkbox.checked = false;
+        checkbox.checked = false;
     });
 }
 
@@ -949,6 +1015,12 @@ function disable_inputs() {
 
 
 async function enable_inputs() {
+
+    // Example usage
+    fetchImageDirectories(folder_id);
+
+
+
     console.log("enabling inputs")
     reset_inputs();
     document.getElementById('dataset_upload_progress').value = 0
@@ -998,6 +1070,8 @@ async function enable_inputs() {
     const blur_images = {};
     const rotate_images = {};
     const crop_images = {};
+    const class_images = {}; //this will store the images for each class
+    const class_names_and_numbers = []; //this will store the names of each class with the number of images in each class
 
     //fetching all blur images
     await fetch(`/get_all_images/${folder_id}/blur`)
@@ -1035,6 +1109,18 @@ async function enable_inputs() {
             }
         })
         .catch(error => console.error('Error fetching images:', error));
+
+    // //fetching number of images in each class along with an image from each class with their names
+    // await fetch(`/get_all_images/${folder_id}/classes`)
+    //     .then(response => response.json())
+    //     .then(data => {
+    //         for (const [className, image_data] of Object.entries(data)) {
+    //             if (image_data) {
+    //                 class_images[className] = `data:image/jpeg;base64,${image_data}`;
+    //             }
+    //         }
+    //     })
+    //     .catch(error => console.error('Error fetching images:', error));
 
     //making it so that the blur slider shows preview images
     blur_slider.addEventListener('input', function () {

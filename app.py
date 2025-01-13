@@ -52,6 +52,21 @@ class_info_dict = {}
 #(ONLY FOR CSV LABELS) each class info dictionary also contains a dictionary of csv labeled images (ex. class_info_dict[folder_id]['csv_labeled_images']---> dict of image paths as keys, and classes as values)
 # each class info dictionary also contains a list of unlabeled images from both folders and csv (ex. class_info_dict[folder_id]['unlabeled_images'] ---> list of paths to unlabeled images)
 
+# #get an image from each class in the dataset, and return the paths to those images to a function that will generate interactive images for each class
+# def getAllClassImages(id):
+#     class_image_paths = [] #list of images in the dataset
+#     classes = [] #list of classes in the dataset
+#     class_counts = [] #list of the number of images in each class
+#     for Class in tuple(class_info_dict[id].keys()):
+#         classes.append(Class)
+#         class_counts.append(len(class_info_dict[id][Class]))
+#         class_image_paths.append(class_info_dict[id][Class][0])
+# def getAllClassImageCounts(id):
+#     class_image_counts = {} #a dictionary that contains classes as keys, and the number of images in each class as values
+#     for Class in tuple(class_info_dict[id].keys()):
+#         class_image_counts[Class] = len(class_info_dict[id][Class])
+
+
 def getAllLabeledImagePaths(folder_id): # returns a list of image paths and their corresponding classes (ex. [[imgPath1,"dogClass"],[imgPath2,"catClass"]])
     img_path_list = []
     for key in class_info_dict[folder_id].keys():
@@ -150,6 +165,7 @@ def download(id,uploadOption):
             if uploadOption!="folder":
                 new_download_file_name = download_file.replace(id,'')#.replace(space_id,' ').replace(left_par_id,'(').replace(right_par_id,')')
             else:
+                # folder_name = upload_folder_path.split('/')[]
                 new_download_file_name = "Augmented Dataset"+".zip"
             ##print('download file:',download_file)
             return send_file(os.path.join(upload_folder_path, download_file), as_attachment=True,download_name=new_download_file_name)
@@ -160,6 +176,19 @@ def check_finished(id):
     ##print('FILE PATH BEING RETURNED:',dict_with_interactive_image_paths[id])
     return dict_with_interactive_image_paths[id] #returns an image path
 
+
+@app.route('/get_all_paths_with_images/<folder_id>', methods=['GET'])
+def get_all_paths_with_images(folder_id):
+    parent_dir = os.path.join(upload_folder_path,folder_id)
+    image_directories = []
+    for root, dirs, files in os.walk(parent_dir):
+        if any(file.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.bmp')) for file in files):
+            root = root.split("/")
+            root = root[7:]
+            root = '/'.join(root)
+            image_directories.append(root)
+    
+    return jsonify(image_directories)
 
 
 def check_if_folder_is_valid(folder_path): #checks if folder has valid classes
@@ -313,6 +342,13 @@ def make_interactive_images(path,id): #TODO:
     thread6 = threading.Thread(target=delete_dir,args=(path,))
     thread6.start()
     return 'none'
+
+
+
+# def make_interactive_image_for_each_class(class_list,image_paths): #class_list is a list of classes for each image in image_paths
+
+
+    
 
 
 def find_dirs_of_filepath(filepath,id):
@@ -553,7 +589,7 @@ def augment(dataset_id):
             output_file_path = os.path.join(upload_folder_path,folder_name)
             # folder to augment is full_dir_path
             #TODO: augment folder here
-            ##print("augmentation data:",augmentation_data)
+            print("augmentation data:",augmentation_data)
             #augmenting ONLY labled images
             images_to_augment = getAllLabeledImagePaths(dataset_id)
             for augmentString in augmentation_data: #augmentation data includes both augment data and pre-process data strings
@@ -599,6 +635,14 @@ def augment(dataset_id):
                     print("grayscale augmentations:",augmentString.split("-")[1:])  
                     augmentString = augmentString.split("-")
                     percentOutputtedImagesToGrayscale = float(augmentString[1])
+                elif "scale" in augmentString:
+                    print("scale augmentations:",augmentString.split("-")[1:])
+                    augmentString = augmentString.split("-")
+                    scaleValue = float(augmentString[1]) #augmented images generated for every original image
+                elif "directories" in augmentString: #checking if augmentString contains directories
+                    directoriesToAugment = augmentString[12:].split(",")
+                    print("directories to augment:",directoriesToAugment)
+
 
 
             shutil.make_archive(full_dir_path,'zip',output_file_path)

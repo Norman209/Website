@@ -98,7 +98,16 @@ select {
   width: auto;
   height: auto;
 } */
-
+.dropzone {
+  width: 30%; /* Set your desired width */
+  height: 300px; /* Set your desired height */
+  border: 2px dashed #ccc;
+  border-radius: 10px;
+  background-color: #f9f9f9;
+  overflow-y: auto; /* Enable vertical scrolling */
+  overflow-x: hidden; /* Hide horizontal overflow */
+  padding: 10px;
+}
 
 
 /* General header styles */

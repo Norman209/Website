@@ -332,9 +332,22 @@
             </div>
         </div>
         <br>
+        <!-- <h3>Choose classes you want to augment</h3> -->
+
+        
+        <h1>Select Directories with Images</h1>
+        <form id="directory-form">
+            <div id="image-directory-checkboxes"></div>
+            <!-- <button type="submit">Submit</button> -->
+        </form>
+
+
+
         <div style="display: flex;
         width: 100%;
         margin-top: 20px; align-items: center;">
+
+
             <label for="Expansion" style="vertical-align: middle;">Dataset Expansion Factor</label>
             <select name="Dataset Expansion Factor" id="Expansion" disabled
                 style="text-align: center;vertical-align:-webkit-baseline-middle;height: 3vw;">
@@ -376,6 +389,7 @@
         <!-- <script src="/static/doubleSlider.js"></script> -->
         <!-- <script src="/static/Classification.js"></script> -->
         <script>disable_inputs();</script>
+
     </div>
     <a href='' id="download_tag" download onclick="close_download_tag();" style="font-size: 5vw;"></a>
 

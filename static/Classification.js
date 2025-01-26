@@ -10,7 +10,7 @@ let totalFiles = 0;
 let sentBatches = 0;
 let completedFiles = 0;
 let batchSize = 20;
-
+let augmentAllDirectories = false; //if there is a single directory only, augment all images in that directory
 let uploadOption = "folder"; //default upload option
 
 
@@ -130,7 +130,7 @@ Dropzone.options.dropper = {
                     });
                 }
                 if (data1 === 'none') {
-                    document.getElementById("visualizationGenerationIndicator").style.display = "none";
+                    document.getElementById("uploading_images_text").style.display = "none";
 
                     console.log('no images found. invalid dataset')
                     document.getElementById("submitFolder").style.display = 'none';
@@ -142,11 +142,12 @@ Dropzone.options.dropper = {
 
                 }
                 else {
-                    document.getElementById("visualizationGenerationIndicator").style.display = "none";
+                    document.getElementById("uploading_images_text").style.display = "none";
                     console.log('dataset uploaded successfully, valid')
                     sample_image_extension = data1;
 
                     enable_inputs();
+                    console.log("enabling inputs on line 149")
                     document.getElementById('dropzone_buttons').style.display = 'none';
                     //document.getElementById('test_image').src = data1
                 }
@@ -163,7 +164,7 @@ Dropzone.options.dropper = {
                 console.log(`Sent chunk ${sentChunks}/${totalChunks}. Remaining chunks: ${remainingChunks}`);
                 if (remainingChunks == 0) {
                     console.log("0 remaining chunks")
-                    document.getElementById("visualizationGenerationIndicator").style.display = "block";
+                    document.getElementById("uploading_images_text").style.display = "block";
                     // formData.append()
                 }
                 // Add parameters to be sent with every chunk request
@@ -217,7 +218,7 @@ Dropzone.options.dropper = {
                     document.getElementById("submitFolder").style.display = "none";
                     console.log("All files uploaded successfully.");
                     // Perform post-upload tasks here
-                    document.getElementById("visualizationGenerationIndicator").style.display = "none";
+                    document.getElementById("uploading_images_text").style.display = "none";
                     console.log("COMPLETED!")
                     console.log('file id:', folder_id);
                     let data1 = 'test';
@@ -237,7 +238,7 @@ Dropzone.options.dropper = {
                         });
                     }
                     if (data1 === 'none') {
-                        document.getElementById("visualizationGenerationIndicator").style.display = "none";
+                        document.getElementById("uploading_images_text").style.display = "none";
                         console.log('no images found. invalid dataset')
                         this.removeAllFiles(true);
 
@@ -254,11 +255,12 @@ Dropzone.options.dropper = {
                     }
                     else {
                         this.hiddenFileInput.setAttribute("webkitdirectory", true);
-                        document.getElementById("visualizationGenerationIndicator").style.display = "none";
+                        document.getElementById("uploading_images_text").style.display = "none";
                         console.log('dataset uploaded successfully, valid')
                         sample_image_extension = data1;
 
                         enable_inputs();
+                        console.log("enabling inputs on line 261")
                         document.getElementById('dropzone_buttons').style.display = 'none';
                         //document.getElementById('test_image').src = data1
                     }
@@ -461,6 +463,7 @@ function resize_preview_images() {
 }
 async function submit_everything() {
     alert("Augmenting uploaded dataset now...");
+    document.getElementById("select_directories_header").style.display = "none";
     let aug_form_data = collect_aug_data();
     disable_inputs();
     let formData = new FormData();
@@ -542,7 +545,7 @@ function set_zip_or_folder_upload() {
         default_upload_option = 'zip'
         document.getElementById('upload_buttons').style.display = 'block';
 
-        Dropzone.forElement("#dropper").updateDropzoneOptions({ autoProcessQueue: true, parallelUploads: 20, chunking: true, forceChunking: true, uploadMultiple: false, acceptedFiles: ".zip", maxFiles: 1 });
+        Dropzone.forElement("#dropper").updateDropzoneOptions({ autoProcessQueue: true, parallelUploads: 20, chunking: true, forceChunking: true, uploadMultiple: true, acceptedFiles: ".zip", maxFiles: 1 });
         // Access the hidden file input
         const hiddenInput = myDropzone.hiddenFileInput;
 
@@ -632,7 +635,7 @@ async function upload_folder() {
     for (i = 0; i < chunks.length; i++) {
         console.log('i:', i, 'chunks length:', chunks.length);
         if ((i) == chunks.length - 1) {
-            document.getElementById("visualizationGenerationIndicator").style.display = "block";
+            document.getElementById("uploading_images_text").style.display = "block";
         }
         last_upload = String((i + 1) === chunks.length);
         let formData = new FormData();
@@ -678,7 +681,7 @@ async function upload_folder() {
 
     }
     console.log('finished');
-    document.getElementById("visualizationGenerationIndicator").style.display = "none";
+    document.getElementById("uploading_images_text").style.display = "none";
     let valid_return_count = 0;
     console.log('responses:', responses)
     for (i = 0; i < responses.length; i++) {
@@ -691,11 +694,12 @@ async function upload_folder() {
             document.getElementById('design').value = null;
             sample_image_extension = response;
             enable_inputs();
+            console.log("enabling inputs on line 695")
             break;
         }
     }
     if (valid_return_count === 0) {
-        document.getElementById("visualizationGenerationIndicator").style.display = "none";
+        document.getElementById("uploading_images_text").style.display = "none";
         console.log('no images found')
         alert('no images found in dataset')
         document.getElementById('dropzone_buttons').style.display = 'block';
@@ -714,45 +718,62 @@ async function fetchImageDirectories(folderId) {
     try {
         // Make the GET request
         const response = await fetch(`/get_all_paths_with_images/${folderId}`);
-        
+
         // Check if the response is successful
         if (!response.ok) {
             throw new Error(`Error: ${response.status} - ${response.statusText}`);
         }
-        
+
         // Parse the JSON response
         const imageDirectories = await response.json();
-        
+
         // Log or process the directories
         console.log("Directories with images:", imageDirectories);
-        
+        if (imageDirectories.length === 0) {
+            document.getElementById("select_directories_header").style.display = "none";
+        }
+        else {
+            document.getElementById("select_directories_header").style.display = "block";
+        }
+
+
         // Example: Render the directories as checkboxes
         const checkboxContainer = document.getElementById('image-directory-checkboxes');
         checkboxContainer.innerHTML = ''; // Clear existing checkboxes
-        imageDirectories.forEach(directory => {
-            // Create a label and checkbox
-            const label = document.createElement('label');
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.value = directory;
-            checkbox.name = 'directories';
-            checkbox.onclick = function() {
-            // Collect selected directories
-            const selectedDirectories = Array.from(document.querySelectorAll('input[name="directories"]:checked')).map(checkbox => checkbox.value);
-            console.log("Selected directories:", selectedDirectories);
-            }
-            
-            // Add text to label and append checkbox
-            label.appendChild(checkbox);
-            label.appendChild(document.createTextNode(directory));
-            label.style.display = 'block'; // Display each checkbox on a new line
-            
-            // Append to container
-            checkboxContainer.appendChild(label);
-        });
-    } catch (error) {
+        if (imageDirectories.length !== 1) {
+            imageDirectories.forEach(directory => {
+                // Create a label and checkbox
+                const label = document.createElement('label');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = directory;
+                checkbox.name = 'directories';
+                checkbox.onclick = function () {
+                    // Collect selected directories
+                    const selectedDirectories = Array.from(document.querySelectorAll('input[name="directories"]:checked')).map(checkbox => checkbox.value);
+                    //clear all selectedDirectories checkboxes here
+                    console.log("Selected directories:", selectedDirectories);
+                }
+
+                // Add text to label and append checkbox
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(directory));
+                label.style.display = 'block'; // Display each checkbox on a new line
+
+                // Append to container
+                checkboxContainer.appendChild(label);
+            });
+        }
+        else {
+            augmentAllDirectories = true;
+            document.getElementById("select_directories_header").style.display = "none";
+        }
+    }
+    catch (error) {
         console.error("Failed to fetch image directories:", error);
     }
+
+
 }
 // document.getElementById('directory-form').addEventListener('onchange', event => {
 //     event.preventDefault(); // Prevent the default form submission
@@ -778,6 +799,7 @@ function collect_aug_data() {
     let blur_checked = document.getElementById('blur_checkbox').checked;
     let grayscale_checked = document.getElementById('grayscale_checkbox').checked;
     let preProcessGrayScaleChecked = document.getElementById("grayscale_preprocess").checked
+    let resize_preprocess_checked = document.getElementById('resize_preprocess').checked;
 
     //send pre-process info first
 
@@ -812,15 +834,27 @@ function collect_aug_data() {
         aug_list.push('blur' + "-" + blurValue);
     }
     if (grayscale_checked) {
-        let percentOutputtedImagesToGrayscale = document.getElementById("blur_limit").value
+        let percentOutputtedImagesToGrayscale = document.getElementById("grayscale_probability").value
         aug_list.push('grayscale' + "-" + percentOutputtedImagesToGrayscale);
+    }
+    if (resize_preprocess_checked) {
+        let selectedWidth = document.getElementById("input_width").value;
+        let selectedHeight = document.getElementById("input_height").value;
+        aug_list.push('resize' + "-" + selectedWidth + "-" + selectedHeight);
     }
     augmentation_scale_factor = document.getElementById('Expansion').value;
     augmentation_scale_factor = augmentation_scale_factor.substring(0, augmentation_scale_factor.length - 1);
     console.log("augmentation scale factor:", augmentation_scale_factor)
     aug_list.push('scale' + "-" + augmentation_scale_factor);
-    const selectedDirectories = Array.from(document.querySelectorAll('input[name="directories"]:checked')).map(checkbox => checkbox.value);
-    aug_list.push('directories:'+ selectedDirectories); //directories user has chosen to augment
+    if (!augmentAllDirectories) {
+        const selectedDirectories = Array.from(document.querySelectorAll('input[name="directories"]:checked')).map(checkbox => checkbox.value);
+        aug_list.push('directories:' + selectedDirectories); //directories user has chosen to augment
+    }
+    else{
+        aug_list.push('directories:all');
+    }
+    document.getElementById('image-directory-checkboxes').innerHTML = "";
+    document.getElementById('image-directory-checkboxes').innerText = "";
     //TODO: return form data instead of list
     return JSON.stringify(aug_list);
 }
@@ -1019,21 +1053,13 @@ async function enable_inputs() {
     // Example usage
     fetchImageDirectories(folder_id);
 
-
+    document.getElementById("fetching_images_text").style.display = "block";
 
     console.log("enabling inputs")
     reset_inputs();
     document.getElementById('dataset_upload_progress').value = 0
     //upload_progress
-    document.getElementById('upload_progress').style.display = 'none';
-    document.getElementById('dropzone_buttons').style.display = 'none';
-    for (i = 0; i < input_ids.length; i++) {
-        //children[i].disabled = true;
-        document.getElementById(input_ids[i]).disabled = false;
-        document.getElementById('augmentation').style.opacity = '100%';
-        document.getElementById('Pre-Proccessing').style.opacity = '100%';
-        document.getElementById('dropzone_buttons').style.display = 'none';
-    }
+ 
 
     //getting slider ids
     let blur_slider = document.getElementById('blur_limit')
@@ -1227,8 +1253,16 @@ async function enable_inputs() {
     }
 
     let copy_paste_code_methods = new copy_paste_code_scripts();
+    document.getElementById("fetching_images_text").style.display = "none";
 
-
-
+    document.getElementById('upload_progress').style.display = 'none';
+    document.getElementById('dropzone_buttons').style.display = 'none';
+    for (i = 0; i < input_ids.length; i++) {
+        //children[i].disabled = true;
+        document.getElementById(input_ids[i]).disabled = false;
+        document.getElementById('augmentation').style.opacity = '100%';
+        document.getElementById('Pre-Proccessing').style.opacity = '100%';
+        document.getElementById('dropzone_buttons').style.display = 'none';
+    }
 
 }

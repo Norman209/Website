@@ -44,11 +44,6 @@
     </div>
     <div id="dropzone_buttons" style="font-size: 1.5vw;">
 
-        <br>
-        <input type="radio" id="multi-label" name="multi-label-or-single-label">
-        <label for="multi-label">Multi-label</label>
-        <input type="radio" id="singel-label" name="multi-label-or-single-label" checked>
-        <label for="singel-label">Single-label</label>
 
         <br>
         <input type="radio" id='zip' name="folder_or_zip" onclick="set_zip_or_folder_upload();"> <label for="zip">Select
@@ -64,10 +59,12 @@
             <!-- <b id="visualizationGenerationIndicator" style="display: none;">Visualizations being generated... please wait</b> -->
             <button onclick="send_dataset();" style="display: none;" id="submitFolder">Submit Dataset</button>
         </div>
+        <b style="display: none;" id="uploading_images_text">uploading images, please wait...</b>
+        <b style="display: none;" id="fetching_images_text">fetching interactive, please wait...</b>
 
         <br>
     </div>
-    <b id="visualizationGenerationIndicator" style="display: none;">Visualizations being generated... please wait</b>
+    <!-- <b id="visualizationGenerationIndicator" style="display: none;">Visualizations being generated... please wait</b> -->
 
     <div id="Pre-Proccessing" style="opacity: 25%; font-size: 1.5vw;" class="checkbox-group">
         <br>
@@ -84,11 +81,11 @@
 
             <select name="resize options" id="resize options" style="width: 20vw;height: 4vw;">
                 <option value="Stretch to" style="width: 20vw;height: 4vw;">Stretch to</option>
-                <option value="fill (with center crop) in">fill (with center crop) in</option>
-                <option value="Fit within">Fill within</option>
-                <option value="Fit (reflect edges) in">Fit (reflect edges) in</option>
+                <!-- <option value="fill (with center crop) in">fill (with center crop) in</option>
+                <option value="Fit within">Fill within</option> -->
+                <!-- <option value="Fit (reflect edges) in">Fit (reflect edges) in</option>
                 <option value="Fit (Black edges) in">Fit (Black edges) in</option>
-                <option value="Fit (white edges) in">Fit (white edges) in</option>
+                <option value="Fit (white edges) in">Fit (white edges) in</option> -->
             </select>
 
             <br>
@@ -201,15 +198,15 @@
                 align-items: center;display: flex; ">
 
                     <div class="item" style="display: none;" id="clockwise_popup">
-                        <img src="" id="clockwise_sample_img" style="transform: rotateX(180deg);" />
+                        <img src="" id="clockwise_sample_img" style="transform: rotate();" />
                         <span class="caption" id="clockwise_caption">Clockwise</span>
                     </div>
                     <div class="item" style="display: none;" id="counter-clockwise_popup">
-                        <img src="" id="counter_clockwise_sample_img" style="transform: rotateY(180deg);" />
+                        <img src="" id="counter_clockwise_sample_img" style="transform: rotate(0deg);" />
                         <span class="caption" id="counter-clockwise_caption">Counter Clockwise</span>
                     </div>
                     <div class="item" style="display: none;" id="upside_down_popup">
-                        <img src="" id="upside_down_sample_img" style="transform: rotateY(180deg);" />
+                        <img src="" id="upside_down_sample_img" style="transform: rotateY(0deg);" />
                         <span class="caption" id="upside-down_caption">Upside DOwn</span>
                     </div>
                 </div>
@@ -335,7 +332,7 @@
         <!-- <h3>Choose classes you want to augment</h3> -->
 
         
-        <h1>Select Directories with Images</h1>
+        <h1 style="display: none;" id="select_directories_header">Select Directories with Images to augment</h1>
         <form id="directory-form">
             <div id="image-directory-checkboxes"></div>
             <!-- <button type="submit">Submit</button> -->

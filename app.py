@@ -4,7 +4,7 @@ import logging
 # log = logging.getLogger('pydrop')
 import shutil
 import time
-#import albumentations as A 
+import albumentations as A 
 # albumentations takes too much time to import
 import os
 os.environ["ALBUMENTATIONS_IGNORE_VERSION"] = "1"
@@ -15,7 +15,7 @@ import fnmatch
 import threading
 import cv2
 import pandas as pd
-from PIL import Image
+from PIL import Image, ImageFilter
 import numpy as np
 from augmentation_functions import apply_gaussian_blur
 from augmentation_functions import apply_rotate
@@ -24,6 +24,7 @@ from augmentation_functions import apply_upside_down
 from augmentation_functions import apply_clockwise
 from augmentation_functions import crop
 os.environ["ALBUMENTATIONS_IGNORE_VERSION"] = "1"
+import random
 from werkzeug import Request as r
 r.max_form_parts = 10000
 log = logging.getLogger('werkzeug')
@@ -34,7 +35,7 @@ app.config['UPLOAD_FOLDER']='/Users/milesnorman/Website/static/upload_folder'
 
 
 app.config["TEMPLATES_AUTO_RELOAD"] = True
-
+image_pathhs = {}
 static_folder_path = '/Users/milesnorman/Website/static'
 upload_folder_path = os.path.join(static_folder_path,'upload_folder') # putting uploaded datasets and interactive images in seperate folders
 interactive_images_folder_path = os.path.join(static_folder_path,"interactive_images_uploads")
@@ -170,7 +171,6 @@ def download(id,uploadOption):
             ##print('download file:',download_file)
             return send_file(os.path.join(upload_folder_path, download_file), as_attachment=True,download_name=new_download_file_name)
 
-
 @app.route('/check_finished/<id>', methods=['GET'])
 def check_finished(id):
     ##print('FILE PATH BEING RETURNED:',dict_with_interactive_image_paths[id])
@@ -180,6 +180,10 @@ def check_finished(id):
 @app.route('/get_all_paths_with_images/<folder_id>', methods=['GET'])
 def get_all_paths_with_images(folder_id):
     parent_dir = os.path.join(upload_folder_path,folder_id)
+    if not os.path.exists(parent_dir):
+        for dir in os.listdir(upload_folder_path):
+            if folder_id in dir:
+                parent_dir = os.path.join(upload_folder_path,dir)
     image_directories = []
     for root, dirs, files in os.walk(parent_dir):
         if any(file.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.bmp')) for file in files):
@@ -267,6 +271,11 @@ def make_interactive_images(path,id): #TODO:
         for filename in files:
             if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.bmp')):
                 img_path = os.path.join(absolute_path,filename)
+                if(image_pathhs.get(id)==None):
+                    e = img_path
+                    image_pathhs[id] = '/'.join(e.split('/')[:-1])
+                    # print("changed dict image paths")
+                print('img path:',img_path.split('/')[:-1])
                 if '__MACOSX' not in img_path:
                     #check if folder has images, if not, return none.
                     filename = img_path.split('/')[-1]
@@ -430,8 +439,8 @@ def upload_files():
     Endpoint to handle multiple file uploads via Dropzone.
     """
     ###print("STARTED UPLOADING MULTIPLE")    
-    print('file keys:',request.files.keys())
-    print('form keys:',request.form.keys())
+    # print('file keys:',request.files.keys())
+    # print('form keys:',request.form.keys())
     file_paths = []
     for i,fileKey in enumerate(request.files.keys()):
         file_path = os.path.join(uploaded_folder_path,request.form["file_path_"+str(i)])
@@ -580,7 +589,22 @@ def augment(dataset_id):
 
     class_data = class_info_dict[dataset_id]
     augmentation_data = json.loads(request.form['aug_data'])
-
+    directoriesToAugment = []
+    vertically_flipped = False
+    horizontally_flipped = False
+    clockwiseRotated = False
+    counterClockwiseRotated = False
+    upsideDownRotated = False
+    degreesRotated = 0
+    min_crop_value = 0
+    max_crop_value = 0
+    blurValue = 0
+    percentOutputtedImagesToGrayscale = 0 #number of images that will be grayscale formula: percentOutputtedImagesToGrayscale/100*totalImages*scaleValue
+    scaleValue = 0
+    resize_values = (0,0)
+    gray_scale_pre_process = False
+    flips = []
+    rotates_90 = []
 
     folders = os.listdir(upload_folder_path)
     for folder_name in folders: # 
@@ -592,36 +616,50 @@ def augment(dataset_id):
             print("augmentation data:",augmentation_data)
             #augmenting ONLY labled images
             images_to_augment = getAllLabeledImagePaths(dataset_id)
+
             for augmentString in augmentation_data: #augmentation data includes both augment data and pre-process data strings
                 if "grayscalePreProcess" == augmentString:
                 
                     print("grayscale pre-processing")
                     #making every labeled image grayscale
                     # #print("class data keys:",class_data.keys())
-                    for image in images_to_augment:
-                        image_path = image[0]
-                        image_class = image[1]
-                        img = cv2.imread(image_path)
-                        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                        cv2.imwrite(image_path,gray) 
+                    gray_scale_pre_process = True
+                    # for image in images_to_augment:
+                    #     image_path = image[0]
+                    #     image_class = image[1]
+                    #     img = cv2.imread(image_path)
+                    #     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                    #     cv2.imwrite(image_path,gray) 
                 elif "flip" in augmentString:
                     print("flip augmentations:",augmentString.split("-")[1:])
                     augmentString = augmentString.split("-")
                     vertically_flipped = augmentString[1] == "true"
                     horizontally_flipped = augmentString[2] == "true"
-
-
+                    if vertically_flipped:
+                        flips.append(0)
+                    if horizontally_flipped:
+                        flips.append(1)
+                elif "resize" in augmentString:
+                    print("resize augmentations:",augmentString.split("-")[1:])
+                    augmentString = augmentString.split("-")
+                    resize_values = (int(augmentString[1]),int(augmentString[2]))
                 elif "90_rotate" in augmentString:
                     print("90_rotate augmentations:",augmentString.split("-")[1:])
                     augmentString = augmentString.split("-")
                     clockwiseRotated = augmentString[1] == "true"
                     counterClockwiseRotated = augmentString[2] == "true"
                     upsideDownRotated = augmentString[3] == "true"
+                    if clockwiseRotated:
+                        rotates_90.append(0)
+                    if counterClockwiseRotated:
+                        rotates_90.append(1)
+                    if upsideDownRotated:
+                        rotates_90.append(2)
 
                 elif "rotate" in augmentString:
                     print("rotate augmentations:",augmentString.split("-")[1:]) 
                     augmentString = augmentString.split("-")
-                    degreesRotated = augmentString[1] #degrees rotated ranges from -degreesRotated, to degreesRotated (ex. -5,5)
+                    degreesRotated = int(augmentString[1]) #degrees rotated ranges from -degreesRotated, to degreesRotated (ex. -5,5)
                 elif "crop" in augmentString:
                     print("crop augmentations",augmentString.split("-")[1:])
                     augmentString = augmentString.split("-")
@@ -640,10 +678,116 @@ def augment(dataset_id):
                     augmentString = augmentString.split("-")
                     scaleValue = float(augmentString[1]) #augmented images generated for every original image
                 elif "directories" in augmentString: #checking if augmentString contains directories
-                    directoriesToAugment = augmentString[12:].split(",")
-                    print("directories to augment:",directoriesToAugment)
+                    if "directories:all" not in augmentString:
+                        directoriesToAugment = augmentString[12:].split(",")
+                        print("directories to augment:",directoriesToAugment)
+                    else:
+                        global image_pathhs
+                        print('keys:',image_pathhs.keys())
+                        directoriesToAugment = [image_pathhs[dataset_id]] 
+                        print("directories to augment:",directoriesToAugment[-1])
+                
+                
+                
+                    
+            image_paths = []
+            for dir in directoriesToAugment:
+                path = os.path.join(upload_folder_path,dataset_id,dir)
+                files = os.listdir(path)
+                print("files:",files)
+                random.shuffle(files)
+                for file in files:
+                    # print("file:",file)
+                    #check if file is image
+                    if file.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.bmp')):
+                        file_path = os.path.join(path,file)
+                        image_paths.append(file_path)
+
+                        img = cv2.imread(file_path)
+                        if gray_scale_pre_process:
+                            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                        if resize_values!=(0,0):
+                            img = cv2.resize(img,resize_values)
+                        cv2.imwrite(file_path,img)
+                        for i in range(int(scaleValue)-1): # for every original image, generate scaleValue-1 augmented images
+                            img = cv2.imread(file_path)
+                            #handeling pre-process augmentations
+
+                            randomfied_file_path = file_path.split("/")
+                            randomfied_file_path[-1] =  str(uuid.uuid4())+randomfied_file_path[-1]
+                            randomfied_file_path = '/'.join(randomfied_file_path)
+                            image_paths.append(randomfied_file_path)
 
 
+                            if len(flips)!=0:
+                                flip_choice = random.choice(flips)
+                                if flip_choice == 0:
+                                    img = cv2.flip(img,0)
+                                elif flip_choice == 1:
+                                    img = cv2.flip(img,1)
+                            if len(rotates_90)!=0:
+                                rotate_choice = random.choice(rotates_90)
+                                if rotate_choice == 0:
+                                    img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
+                                elif rotate_choice == 1:
+                                    img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+                                elif rotate_choice == 2:
+                                    img = cv2.rotate(img, cv2.ROTATE_180)
+
+                            if degreesRotated!=0:
+                                #-degreesRotated, degreesRotated
+                                # img = apply_rotate(img,degreesRotated)
+                                # img = cv2.imread(file_path)
+                                print("degrees rotated:",degreesRotated,"type:",type(degreesRotated))
+                                if degreesRotated>0:
+                                    degreesToAugment = random.randint(-1*int(degreesRotated),int(degreesRotated))
+                                else:
+                                    degreesToAugment = random.randint(int(degreesRotated),-1*int(degreesRotated))
+                                print("degrees rotated:",degreesToAugment)
+                                transform = A.Compose([
+                                A.Rotate(always_apply=True, p=1.0, limit=(degreesToAugment, degreesToAugment), interpolation=0, border_mode=0, value=(0, 0, 0), mask_value=None, rotate_method='largest_box', crop_border=False),  # Rotate images by a random angle between -45 and 45 degrees
+                                ])
+                                augmented = transform(image=img)
+                                img = augmented['image']
+                                # cv2.imwrite(randomfied_file_path, rotated_image) #saving the augmented image with the dataset id appended to the end of the file name
+                            if min_crop_value!=0 and max_crop_value!=0:
+                                # print("image file path:",file_path)
+                                # image = cv2.imread(file_path)
+                                height = img.shape[0]
+                                width = img.shape[1]
+                                #generate random number for cropping
+                                percentage = random.randint(min_crop_value,max_crop_value)
+                                print("percentage generated:",percentage)
+                                transform = A.Compose([
+                                A.CenterCrop(height=round(height*((100-percentage)/100)), width=round(width*((100-percentage)/100)),p=1.0),
+                                A.Resize(height=height, width=width)
+                                ])
+                                augmented = transform(image=img)
+                                img = augmented['image']
+                            
+                                # cv2.imwrite(randomfied_file_path, cropped_image)
+                            if blurValue!=0:
+                                # image = Image.open(file_path)
+                                print("blur value:",blurValue)
+                                # generate a random blur value between 0.1 and blurValue, rounded to the nearest multiple of 0.1
+                                blurValueToAugment = round(random.uniform(0.1, blurValue), 1)
+                                print("blur value generated:",blurValue)
+                                blur_radius = blurValueToAugment  # Adjust the radius as needed
+                                 # Convert the OpenCV image (NumPy array) to a Pillow image
+                                image = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+                                image = image.filter(ImageFilter.GaussianBlur(radius=blur_radius*2.3))
+                                  # Convert the Pillow image back to an OpenCV image (NumPy array)
+                                img = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+                            cv2.imwrite(randomfied_file_path, img) #saving the augmented image with the dataset id appended to the end of the file name
+            if percentOutputtedImagesToGrayscale!=0:
+                total_images = len(image_paths)
+                imagesToGrayscale = int(float(percentOutputtedImagesToGrayscale)/100*len(image_paths))
+                print("images to grayscale:",imagesToGrayscale)
+                print("percentOutputtedImagesToGrayscale:",percentOutputtedImagesToGrayscale)
+                for i in range(int(imagesToGrayscale)):
+                    img = cv2.imread(image_paths[i])
+                    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                    cv2.imwrite(image_paths[i], img)
 
             shutil.make_archive(full_dir_path,'zip',output_file_path)
             thread4 = threading.Thread(target=delete_dir,args=(full_dir_path,))

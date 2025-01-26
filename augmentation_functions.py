@@ -16,7 +16,7 @@ from matplotlib import pyplot as plt
 #     blurred_image.save(output_path)
 
 def apply_gaussian_blur(image_path, base_sigma, output_path):
-    image = Image.open(image_path)
+    image = Image.open(image_path) #cv2 imread image instead of pil image
 
     # Apply Gaussian Blur
     blur_radius = base_sigma  # Adjust the radius as needed

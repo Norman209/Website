@@ -1,5 +1,6 @@
 albumentations==2.0.4
 matplotlib==3.8.0
-numpy==2.2.3
+numpy
 opencv-contrib-python-headless
 Pillow==11.1.0
+flask

@@ -4,3 +4,4 @@ numpy
 opencv-contrib-python-headless
 Pillow==11.1.0
 flask
+pandas
